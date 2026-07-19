@@ -28,6 +28,7 @@ interface AppState {
   savedBusinessIds: string[]
   savedProductIds: string[]
   compareIds: string[]
+  recentlyViewed: string[]
   aiPanelOpen: boolean
   searchQuery: string
 
@@ -45,6 +46,8 @@ interface AppState {
   toggleSaveProduct: (id: string) => void
   toggleCompare: (id: string) => void
   clearCompare: () => void
+  addRecentlyViewed: (id: string) => void
+  clearRecentlyViewed: () => void
   setAiPanel: (open: boolean) => void
   setSearchQuery: (q: string) => void
 }
@@ -61,6 +64,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   savedBusinessIds: [],
   savedProductIds: [],
   compareIds: [],
+  recentlyViewed: [],
   aiPanelOpen: false,
   searchQuery: '',
 
@@ -118,6 +122,11 @@ export const useAppStore = create<AppState>((set, get) => ({
           : [...s.compareIds, id],
     })),
   clearCompare: () => set({ compareIds: [] }),
+  addRecentlyViewed: (id) =>
+    set((s) => ({
+      recentlyViewed: [id, ...s.recentlyViewed.filter((x) => x !== id)].slice(0, 12),
+    })),
+  clearRecentlyViewed: () => set({ recentlyViewed: [] }),
   setAiPanel: (open) => set({ aiPanelOpen: open }),
   setSearchQuery: (q) => set({ searchQuery: q }),
 }))

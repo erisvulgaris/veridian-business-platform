@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import useSWR from 'swr'
-import { Sparkles, TrendingUp, Star, BadgeCheck, Clock, Filter, X, MapPin, ArrowRight, Flame, Crown, ShieldCheck } from 'lucide-react'
+import { Sparkles, TrendingUp, Star, BadgeCheck, Clock, Filter, X, MapPin, ArrowRight, Flame, Crown, ShieldCheck, History, Locate, Crosshair } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import type { Business, Category } from '@/lib/types'
 import { MapView } from '@/components/map-view'
@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils'
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
 export function HomeView() {
-  const { activeCategories, filters } = useAppStore()
+  const { activeCategories, filters, recentlyViewed } = useAppStore()
 
   const catsParam = activeCategories.length ? activeCategories.join(',') : 'all'
   const query = new URLSearchParams({
@@ -33,9 +33,20 @@ export function HomeView() {
   const businesses = businessesData?.businesses ?? []
   const categories = catsData?.categories ?? []
 
-  const trending = businesses.filter((b) => b.trending)
-  const featured = businesses.filter((b) => b.featured).slice(0, 6)
-  const verified = businesses.filter((b) => b.verified === 'premium' || b.verified === 'enterprise').slice(0, 8)
+  // Deduplicate: trending excludes featured, verified excludes both — cleaner discovery
+  const trending = businesses.filter((b) => b.trending && !b.featured).slice(0, 8)
+  const featured = businesses.filter((b) => b.featured).slice(0, 8)
+  const featuredIds = new Set(featured.map((b) => b.id))
+  const trendingIds = new Set(trending.map((b) => b.id))
+  const verified = businesses
+    .filter((b) => (b.verified === 'premium' || b.verified === 'enterprise') && !featuredIds.has(b.id) && !trendingIds.has(b.id))
+    .slice(0, 8)
+
+  // recently viewed (resolved from store IDs against fetched businesses)
+  const recent = recentlyViewed
+    .map((id) => businesses.find((b) => b.id === id))
+    .filter(Boolean)
+    .slice(0, 8) as Business[]
 
   return (
     <div className="mx-auto max-w-[1600px] px-3 py-3 sm:px-4">
@@ -75,6 +86,27 @@ export function HomeView() {
 
       {/* Discovery sections */}
       <div className="mt-8 space-y-10">
+        {recent.length > 0 && (
+          <section>
+            <div className="mb-3 flex items-end justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <History className="h-4 w-4 text-primary" />
+                  <h2 className="text-lg font-bold tracking-tight">Recently viewed</h2>
+                </div>
+                <p className="text-xs text-muted-foreground">Pick up where you left off</p>
+              </div>
+              <span className="text-xs text-muted-foreground">{recent.length} places</span>
+            </div>
+            <div className="no-scrollbar -mx-3 flex gap-3 overflow-x-auto px-3 pb-2">
+              {recent.map((b) => (
+                <div key={b.id} className="w-64 shrink-0">
+                  <BusinessCard business={b} layout="grid" />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
         {trending.length > 0 && (
           <DiscoverySection
             title="Trending now"

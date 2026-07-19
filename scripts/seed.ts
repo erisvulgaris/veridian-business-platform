@@ -25,6 +25,31 @@ const categories = [
 const img = (seed: string, w = 800, h = 600) =>
   `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`
 
+// Category-themed image seeds so galleries look relevant (hospital → medical, etc.)
+// Uses Lorem Picsum with curated seed words that bias toward themed stock photos.
+const CATEGORY_IMAGE_SEEDS: Record<string, string[]> = [
+  'hospital', 'clinic', 'medicine', 'healthcare',
+  'factory', 'machinery', 'industrial', 'workshop',
+  'restaurant', 'food', 'cuisine', 'kitchen',
+  'school', 'education', 'campus', 'students',
+  'hotel', 'luxury', 'resort', 'lobby',
+  'pharmacy', 'wellness', 'drugs', 'supplements',
+  'warehouse', 'logistics', 'wholesale', 'distribution',
+  'architecture', 'building', 'realestate', 'city',
+  'automotive', 'car', 'garage', 'motor',
+]
+
+function categorySeed(category: string, index: number): string {
+  const seeds = CATEGORY_IMAGE_SEEDS[Math.abs(hashCode(category)) % CATEGORY_IMAGE_SEEDS.length]
+  return seeds[index % seeds.length]
+}
+
+function hashCode(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
+  return h
+}
+
 const businesses = [
   {
     name: 'Aarogya Multispecialty Hospital',
@@ -382,7 +407,9 @@ async function main() {
     const lng = jitter(CENTER.lng, 0.1)
     const seed = b.name.replace(/&/g, "and").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase()
 
-    const gallery = Array.from({ length: 6 }, (_, i) => img(`${seed}-g${i}`))
+    // Category-themed gallery + cover so a hospital shows medical imagery, etc.
+    const cseed = (i: number) => categorySeed(b.category, i)
+    const gallery = Array.from({ length: 6 }, (_, i) => img(`${cseed(i)}-${seed}`, 800, 600))
 
     const business = await db.business.create({
       data: {
@@ -390,8 +417,8 @@ async function main() {
         slug: seed,
         tagline: b.tagline,
         description: b.description,
-        logo: img(`${seed}-logo`, 200, 200),
-        coverImage: img(`${seed}-cover`, 1600, 600),
+        logo: img(`${cseed(0)}-logo-${seed}`, 200, 200),
+        coverImage: img(`${cseed(1)}-cover-${seed}`, 1600, 600),
         gallery: JSON.stringify(gallery),
         category: b.category,
         subCategories: JSON.stringify(b.subCategories),
@@ -447,7 +474,7 @@ async function main() {
           name: p.name,
           slug: p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
           description: `${p.name} — manufactured and supplied by ${b.name}. Backed by ${b.certifications.join(', ')} certifications and a proven track record across ${b.subCategories.join(', ')}.`,
-          images: JSON.stringify(Array.from({ length: 4 }, (_, i) => img(`${seed}-p${i}`, 800, 600))),
+          images: JSON.stringify(Array.from({ length: 4 }, (_, i) => img(`${cseed(i + 2)}-prod-${seed}-${i}`, 800, 600))),
           category: p.category,
           brand: p.brand,
           priceMin: p.priceMin,
@@ -478,7 +505,7 @@ async function main() {
           coverageArea: s.coverageArea,
           requirements: JSON.stringify(['Valid ID', 'Prior appointment']),
           deliverables: JSON.stringify(s.deliverables),
-          photos: JSON.stringify(Array.from({ length: 3 }, (_, i) => img(`${seed}-s${i}`, 800, 600))),
+          photos: JSON.stringify(Array.from({ length: 3 }, (_, i) => img(`${cseed(i + 3)}-svc-${seed}-${i}`, 800, 600))),
           faqs: JSON.stringify([{ q: 'How do I book?', a: 'Call us or request a quote through the platform.' }]),
         },
       })
@@ -491,11 +518,11 @@ async function main() {
         data: {
           businessId: business.id,
           authorName: r.authorName,
-          authorAvatar: img(`${seed}-rv${i}-avatar`, 100, 100),
+          authorAvatar: img(`avatar-${r.authorName.replace(/\s+/g, '-').toLowerCase()}`, 100, 100),
           rating: r.rating,
           title: r.title,
           content: r.content,
-          photos: JSON.stringify(i % 2 === 0 ? [img(`${seed}-rv${i}-photo`, 600, 400)] : []),
+          photos: JSON.stringify(i % 2 === 0 ? [img(`${cseed(i + 4)}-review-${seed}`, 600, 400)] : []),
           verified: r.verified,
           helpful: r.helpful + i,
           businessReply: i % 2 === 0 ? reviewReplies[i % reviewReplies.length] : null,

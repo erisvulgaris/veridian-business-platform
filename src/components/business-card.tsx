@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { motion } from 'framer-motion'
-import { MapPin, Clock, Bookmark, BookmarkCheck, Eye, Package, Wrench } from 'lucide-react'
+import { MapPin, Clock, Bookmark, BookmarkCheck, Eye, Package, Wrench, Flame } from 'lucide-react'
 import type { Business } from '@/lib/types'
 import { formatNumber, timeAgo } from '@/lib/types'
 import { VerificationBadge } from './verification-badge'
@@ -21,11 +21,12 @@ export function BusinessCard({
   showDistance?: boolean
   distance?: number
 }) {
-  const { setView, toggleSaveBusiness, savedBusinessIds, selectBusiness, hoverBusiness } = useAppStore()
+  const { setView, toggleSaveBusiness, savedBusinessIds, selectBusiness, hoverBusiness, addRecentlyViewed } = useAppStore()
   const saved = savedBusinessIds.includes(b.id)
 
   const open = () => {
     selectBusiness(b.id)
+    addRecentlyViewed(b.id)
     setView({ name: 'business', id: b.id, slug: b.slug })
   }
 
@@ -66,8 +67,8 @@ export function BusinessCard({
           <div className="absolute left-3 top-3 flex items-center gap-1.5">
             <VerificationBadge level={b.verified} size="xs" />
             {b.trending && (
-              <span className="rounded-full bg-rose-500/90 px-2 py-0.5 text-[9px] font-bold text-white backdrop-blur">
-                TRENDING
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-orange-500/90 to-rose-500/90 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur">
+                <Flame className="h-2.5 w-2.5" /> TRENDING
               </span>
             )}
           </div>
@@ -139,8 +140,8 @@ export function BusinessCard({
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           <VerificationBadge level={b.verified} size="xs" />
           {b.trending && (
-            <span className="rounded-full bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold text-rose-600 dark:text-rose-400">
-              TRENDING
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-orange-500/15 to-rose-500/15 px-1.5 py-0.5 text-[9px] font-bold text-orange-600 dark:text-orange-400">
+              <Flame className="h-2.5 w-2.5" /> TRENDING
             </span>
           )}
           <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium text-secondary-foreground">{b.category}</span>

@@ -57,3 +57,49 @@ Unresolved / Next-phase priorities:
 - Add more seed businesses for richer discovery.
 - Add product/service comparison.
 - Add business messaging / lead inbox.
+
+---
+Task ID: 2 (cron review round 1)
+Agent: Cron webDevReview
+Task: QA the platform via agent-browser + VLM, fix visual/UX issues, add new features, improve styling.
+
+Work Log:
+- Reviewed existing worklog (Task ID 1) to understand prior progress.
+- QA via agent-browser: home, business profile, products, search, dashboard, dark mode all functional; no console errors.
+- VLM analysis of home + business screenshots identified: (1) redundant businesses in Trending+Featured sections, (2) TRENDING badge color too loud, (3) map placeholder looked draft-like, (4) gallery images generic/unrelated to category (hospital showed laptop/deer), (5) no review-writing form, (6) no "near me", (7) no recently-viewed.
+
+Fixes applied:
+- Discovery deduplication: Trending now excludes Featured; Premium/Enterprise excludes both → no business repeats across sections.
+- TRENDING badge redesigned: softer gradient (orange→rose) with Flame icon, in both card grid + list layouts + business header.
+- Map background significantly enhanced: added fine grid pattern, terrain gradient base, layered roads (casing+fill+centerline), river with shimmer dashed line + lake, 3 parks with soft-shadow filter + tree-dot texture, 60 procedurally-placed building footprints for density, vignette. District labels upgraded with underline accent and 2 new districts.
+- Re-seeded database with category-themed images: hospital→medical, manufacturer→factory, restaurant→food, school→campus, etc. Gallery, cover, logo, product images, service photos, review photos all now use category-biased Lorem Picsum seeds.
+
+New features added:
+- Image Lightbox component (`src/components/image-lightbox.tsx`): fullscreen portal viewer with keyboard nav (←/→/Esc), prev/next buttons, thumbnail strip, counter, title. Wired into business gallery — clicking any photo opens it.
+- Review writing with backend persistence: `POST /api/businesses/[id]/reviews` route creates Review record, recalculates + updates business rating & reviewCount aggregate. Review form component with interactive star rating (hover), name/title/content fields, validation, char counter, loading state, optimistic UI update on submit. Reviews tab also gained sorting (Most recent / Highest / Lowest / With photos).
+- "Near me" geolocation: Crosshair button on map controls uses navigator.geolocation, centers map on user, drops an animated blue user-location pin (with ping pulse). Graceful fallback on denial/unsupported.
+- Recently viewed: zustand store tracks last 12 viewed business IDs (addRecentlyViewed called on card click). Home shows a horizontal "Recently viewed" strip above Trending when history exists.
+- Live review state: ReviewsSection maintains local state so newly-added reviews appear instantly without refetch; rating/count update in real-time.
+
+Verification:
+- agent-browser: home renders cleanly, map polished (VLM confirmed "more polished, no remaining visual issues"), business profile opens, gallery lightbox opens with nav, reviews tab shows form, submitted a test review ("Test User", 5★) → persisted to DB, rating recalculated 4.7→4.8, count 5→6, review appears at top of list.
+- "Near me" button present and labeled.
+- "Recently viewed" strip appears after viewing a business then returning home.
+- ESLint passes clean. Dev server compiles with no errors. All routes 200.
+
+Stage Summary:
+- Platform is more polished and feature-rich than round 1.
+- New artifacts: `src/components/image-lightbox.tsx`, `src/app/api/businesses/[id]/reviews/route.ts`.
+- Modified: `src/lib/store.ts` (recentlyViewed), `src/components/map-view.tsx` (geolocation + map polish), `src/components/business-card.tsx` (TRENDING badge + recently-viewed tracking), `src/components/views/home-view.tsx` (dedupe + recently-viewed strip), `src/components/views/business-view.tsx` (lightbox + review form + sorting), `scripts/seed.ts` (category-themed images).
+- All round-1 features intact; no regressions.
+
+Unresolved / Next-phase priorities:
+- Persist recently-viewed + saved to localStorage so they survive page reloads.
+- Add collections (user-named lists) beyond flat "saved".
+- Request-for-quotation (RFQ) flow with backend persistence + business inbox.
+- Flesh out ERP modules into real CRUD screens.
+- Add SEO landing pages per category/city.
+- Add more seed businesses for richer discovery (currently 12).
+- Product/service comparison (currently only business compare).
+- Business messaging / lead inbox.
+- Map: add real tile option as alternative to stylized.

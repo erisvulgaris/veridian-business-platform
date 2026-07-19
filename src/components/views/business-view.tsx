@@ -8,6 +8,8 @@ import {
   Truck, Building2, Users, Calendar, Sparkles, ChevronRight, Package, Wrench,
   Star, ThumbsUp, Camera, ArrowRight, Navigation, FileText, Megaphone, Tag,
   Facebook, Instagram, Linkedin, Twitter, GitCompare, CheckCircle2, Loader2,
+  Flame, X as XIcon, ChevronLeft, ChevronRight as ChevronRightIcon,
+  ZoomIn, Send,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import type { Business, Review } from '@/lib/types'
@@ -15,6 +17,7 @@ import { formatPrice, formatNumber, timeAgo } from '@/lib/types'
 import { VerificationBadge } from '@/components/verification-badge'
 import { RatingStars } from '@/components/rating-stars'
 import { BusinessCard } from '@/components/business-card'
+import { ImageLightbox, useLightbox } from '@/components/image-lightbox'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -66,6 +69,7 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
   const inCompare = compareIds.includes(b.id)
   const [activeTab, setActiveTab] = React.useState('overview')
   const [showAllGallery, setShowAllGallery] = React.useState(false)
+  const galleryLightbox = useLightbox()
 
   const gallery = b.gallery
   const visibleGallery = showAllGallery ? gallery : gallery.slice(0, 6)
@@ -112,7 +116,9 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
               <h1 className="text-lg font-bold tracking-tight sm:text-xl">{b.name}</h1>
               <VerificationBadge level={b.verified} size="sm" />
               {b.trending && (
-                <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">TRENDING</span>
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-orange-500/15 to-rose-500/15 px-2 py-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400">
+                  <Flame className="h-3 w-3" /> TRENDING
+                </span>
               )}
             </div>
             <p className="mt-0.5 text-sm text-muted-foreground">{b.tagline}</p>
@@ -188,12 +194,20 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
 
               {/* Gallery */}
               {gallery.length > 0 && (
-                <Card title="Gallery">
+                <Card title="Gallery" action={<span className="text-[10px] text-muted-foreground">{gallery.length} photos</span>}>
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                     {visibleGallery.map((g, i) => (
-                      <div key={i} className="group relative aspect-square overflow-hidden rounded-lg">
-                        <img src={g} alt="" className="h-full w-full object-cover transition group-hover:scale-110" />
-                      </div>
+                      <button
+                        key={i}
+                        onClick={() => galleryLightbox.openAt(i)}
+                        className="group relative aspect-square overflow-hidden rounded-lg ring-1 ring-border transition hover:ring-primary/50"
+                      >
+                        <img src={g} alt={`${b.name} photo ${i + 1}`} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
+                        <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
+                        <span className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/85 text-foreground opacity-0 backdrop-blur transition group-hover:opacity-100">
+                          <ZoomIn className="h-3 w-3" />
+                        </span>
+                      </button>
                     ))}
                   </div>
                   {gallery.length > 6 && (
@@ -201,6 +215,14 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
                       {showAllGallery ? 'Show less' : `Show all ${gallery.length} photos`}
                     </button>
                   )}
+                  <ImageLightbox
+                    images={gallery}
+                    open={galleryLightbox.open}
+                    index={galleryLightbox.index}
+                    onClose={() => galleryLightbox.setOpen(false)}
+                    onIndexChange={galleryLightbox.setIndex}
+                    title={b.name}
+                  />
                 </Card>
               )}
 
@@ -326,7 +348,7 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
         </TabsContent>
 
         <TabsContent value="reviews" className="mt-3">
-          <ReviewsSection reviews={b.reviews} rating={b.rating} reviewCount={b.reviewCount} />
+          <ReviewsSection reviews={b.reviews} rating={b.rating} reviewCount={b.reviewCount} businessSlug={b.slug} />
         </TabsContent>
 
         <TabsContent value="about" className="mt-3">
@@ -508,12 +530,40 @@ function ServiceCard({ service: s, businessId }: { service: any; businessId: str
   )
 }
 
-function ReviewsSection({ reviews, rating, reviewCount }: { reviews: Review[]; rating: number; reviewCount: number }) {
+function ReviewsSection({ reviews, rating, reviewCount, businessSlug }: { reviews: Review[]; rating: number; reviewCount: number; businessSlug: string }) {
+  const [localReviews, setLocalReviews] = React.useState<Review[]>(reviews)
+  const [currentRating, setCurrentRating] = React.useState(rating)
+  const [currentCount, setCurrentCount] = React.useState(reviewCount)
+  const [sort, setSort] = React.useState<'recent' | 'highest' | 'lowest' | 'photos'>('recent')
+  const [showForm, setShowForm] = React.useState(false)
+
+  React.useEffect(() => {
+    setLocalReviews(reviews)
+    setCurrentRating(rating)
+    setCurrentCount(reviewCount)
+  }, [reviews, rating, reviewCount])
+
+  const sorted = React.useMemo(() => {
+    const arr = [...localReviews]
+    if (sort === 'recent') arr.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    if (sort === 'highest') arr.sort((a, b) => b.rating - a.rating)
+    if (sort === 'lowest') arr.sort((a, b) => a.rating - b.rating)
+    if (sort === 'photos') arr.sort((a, b) => (b.photos?.length || 0) - (a.photos?.length || 0))
+    return arr
+  }, [localReviews, sort])
+
   const dist = React.useMemo(() => {
     const d = [0, 0, 0, 0, 0]
-    reviews.forEach((r) => { if (r.rating >= 1 && r.rating <= 5) d[r.rating - 1]++ })
+    localReviews.forEach((r) => { if (r.rating >= 1 && r.rating <= 5) d[r.rating - 1]++ })
     return d
-  }, [reviews])
+  }, [localReviews])
+
+  const onSubmitted = (review: Review, newRating: number, newCount: number) => {
+    setLocalReviews((prev) => [review, ...prev])
+    setCurrentRating(newRating)
+    setCurrentCount(newCount)
+    setShowForm(false)
+  }
 
   return (
     <div className="space-y-4">
@@ -522,18 +572,18 @@ function ReviewsSection({ reviews, rating, reviewCount }: { reviews: Review[]; r
         <div className="rounded-2xl border border-border bg-card p-4 card-elevated">
           <div className="flex items-center gap-3">
             <div className="text-center">
-              <p className="text-3xl font-bold">{rating.toFixed(1)}</p>
-              <RatingStars rating={rating} size="xs" showValue={false} />
-              <p className="mt-1 text-[10px] text-muted-foreground">{formatNumber(reviewCount)} reviews</p>
+              <p className="text-3xl font-bold">{currentRating.toFixed(1)}</p>
+              <RatingStars rating={currentRating} size="xs" showValue={false} />
+              <p className="mt-1 text-[10px] text-muted-foreground">{formatNumber(currentCount)} reviews</p>
             </div>
             <Separator orientation="vertical" className="h-16" />
             <div className="flex-1 space-y-1">
-              {[5, 4, 3, 2, 1].map((star, i) => (
+              {[5, 4, 3, 2, 1].map((star) => (
                 <div key={star} className="flex items-center gap-1.5">
                   <span className="w-3 text-[10px] text-muted-foreground">{star}</span>
                   <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
-                    <div className="h-full rounded-full bg-amber-400" style={{ width: `${(dist[star - 1] / Math.max(reviews.length, 1)) * 100}%` }} />
+                    <div className="h-full rounded-full bg-amber-400" style={{ width: `${(dist[star - 1] / Math.max(localReviews.length, 1)) * 100}%` }} />
                   </div>
                   <span className="w-4 text-right text-[10px] text-muted-foreground">{dist[star - 1]}</span>
                 </div>
@@ -545,19 +595,146 @@ function ReviewsSection({ reviews, rating, reviewCount }: { reviews: Review[]; r
             <Sparkles className="h-4 w-4 text-primary" />
             <p className="text-[11px] text-muted-foreground">Reviews are summarised by AI in the summary above.</p>
           </div>
-          <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => toast.success('Review form coming soon')}>
-            <Star className="h-3.5 w-3.5" /> Write a review
+          <Button size="sm" className="mt-2 w-full gap-1.5" onClick={() => setShowForm((s) => !s)}>
+            <Star className="h-3.5 w-3.5" /> {showForm ? 'Cancel' : 'Write a review'}
           </Button>
         </div>
 
-        {/* Reviews list */}
+        {/* Reviews list + form */}
         <div className="space-y-3">
-          {reviews.map((r) => (
+          {showForm && (
+            <ReviewForm businessSlug={businessSlug} onSubmitted={onSubmitted} />
+          )}
+          {localReviews.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-muted-foreground">Sort by</span>
+              {([
+                ['recent', 'Most recent'],
+                ['highest', 'Highest'],
+                ['lowest', 'Lowest'],
+                ['photos', 'With photos'],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setSort(key)}
+                  className={cn(
+                    'rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
+                    sort === key ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40'
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+          {sorted.map((r) => (
             <ReviewCard key={r.id} review={r} />
           ))}
-          {reviews.length === 0 && (
+          {localReviews.length === 0 && !showForm && (
             <EmptyState icon={<Star className="h-8 w-8" />} title="No reviews yet" subtitle="Be the first to review this business." />
           )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ReviewForm({ businessSlug, onSubmitted }: { businessSlug: string; onSubmitted: (r: Review, rating: number, count: number) => void }) {
+  const [name, setName] = React.useState('')
+  const [rating, setRating] = React.useState(5)
+  const [hoverRating, setHoverRating] = React.useState(0)
+  const [title, setTitle] = React.useState('')
+  const [content, setContent] = React.useState('')
+  const [submitting, setSubmitting] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const submit = async () => {
+    setError(null)
+    if (!name.trim()) { setError('Please enter your name'); return }
+    if (!content.trim()) { setError('Please share your experience'); return }
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/businesses/${businessSlug}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authorName: name, rating, title, content, photos: [] }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Failed to submit'); return }
+      toast.success('Review published — thank you!')
+      onSubmitted(data.review, data.rating, data.reviewCount)
+      setName(''); setTitle(''); setContent(''); setRating(5)
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border-2 border-primary/20 bg-primary/[0.03] p-4 animate-scale-in">
+      <div className="mb-3 flex items-center gap-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10"><Star className="h-3.5 w-3.5 text-primary" /></div>
+        <p className="text-sm font-semibold">Share your experience</p>
+      </div>
+      <div className="space-y-3">
+        {/* Rating */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground w-16">Rating</span>
+          <div className="flex gap-0.5">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <button
+                key={i}
+                onMouseEnter={() => setHoverRating(i)}
+                onMouseLeave={() => setHoverRating(0)}
+                onClick={() => setRating(i)}
+                className="p-0.5"
+                aria-label={`${i} stars`}
+              >
+                <Star className={cn('h-5 w-5 transition', (hoverRating || rating) >= i ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/40')} />
+              </button>
+            ))}
+          </div>
+          <span className="text-xs font-medium text-foreground">{rating}.0</span>
+        </div>
+        {/* Name */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground w-16">Name</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
+            className="h-9 flex-1 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+        {/* Title */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground w-16">Title</span>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Summarize your experience"
+            className="h-9 flex-1 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+        {/* Content */}
+        <div>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Tell others about your experience with this business…"
+            rows={4}
+            className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          <p className="mt-1 text-right text-[10px] text-muted-foreground">{content.length}/2000</p>
+        </div>
+        {error && <p className="text-xs font-medium text-destructive">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={() => { setName(''); setTitle(''); setContent(''); setRating(5) }} disabled={submitting}>Clear</Button>
+          <Button size="sm" className="gap-1.5" onClick={submit} disabled={submitting}>
+            {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+            {submitting ? 'Publishing…' : 'Publish review'}
+          </Button>
         </div>
       </div>
     </div>
