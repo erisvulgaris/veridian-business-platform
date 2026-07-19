@@ -6,6 +6,7 @@ import { Wrench, ChevronRight, Clock, MapPin, CheckCircle2, FileText, Store } fr
 import { useAppStore } from '@/lib/store'
 import type { Service, Business } from '@/lib/types'
 import { VerificationBadge } from '@/components/verification-badge'
+import { RFQModal } from '@/components/rfq-modal'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
@@ -17,6 +18,7 @@ export function ServiceView({ id }: { id: string }) {
   const { setView } = useAppStore()
   const s = data?.service
   const [activePhoto, setActivePhoto] = React.useState(0)
+  const [rfqOpen, setRfqOpen] = React.useState(false)
 
   React.useEffect(() => setActivePhoto(0), [id])
 
@@ -82,7 +84,7 @@ export function ServiceView({ id }: { id: string }) {
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <Button className="h-10" onClick={() => toast.success('Booking request sent')}>Book service</Button>
+          <Button className="h-10" onClick={() => setRfqOpen(true)}>Book service</Button>
           <Button variant="outline" className="h-10" onClick={() => window.open(`tel:${s.business.phone}`)}>Call business</Button>
         </div>
 
@@ -123,6 +125,16 @@ export function ServiceView({ id }: { id: string }) {
             </div>
           </section>
         )}
+
+        {/* RFQ modal */}
+        <RFQModal
+          open={rfqOpen}
+          onClose={() => setRfqOpen(false)}
+          businessId={s.business.id}
+          businessName={s.business.name}
+          businessSlug={s.business.slug}
+          context={{ type: 'service', name: s.name }}
+        />
       </div>
     </div>
   )

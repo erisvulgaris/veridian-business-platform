@@ -4,7 +4,7 @@ import * as React from 'react'
 import { motion } from 'framer-motion'
 import { MapPin, Clock, Bookmark, BookmarkCheck, Eye, Package, Wrench, Flame } from 'lucide-react'
 import type { Business } from '@/lib/types'
-import { formatNumber, timeAgo } from '@/lib/types'
+import { formatNumber, timeAgo, computeIsOpen } from '@/lib/types'
 import { VerificationBadge } from './verification-badge'
 import { RatingStars } from './rating-stars'
 import { useAppStore } from '@/lib/store'
@@ -23,6 +23,10 @@ export function BusinessCard({
 }) {
   const { setView, toggleSaveBusiness, savedBusinessIds, selectBusiness, hoverBusiness, addRecentlyViewed } = useAppStore()
   const saved = savedBusinessIds.includes(b.id)
+  // Live "open now" computed from hours + current time (falls back to stored flag)
+  const liveOpen = React.useMemo(() => {
+    try { return computeIsOpen(b.hours) } catch { return b.isOpen }
+  }, [b.hours, b.isOpen])
 
   const open = () => {
     selectBusiness(b.id)
@@ -90,9 +94,9 @@ export function BusinessCard({
         <div className="space-y-2 p-3">
           <div className="flex items-center justify-between">
             <RatingStars rating={b.rating} size="sm" count={b.reviewCount} />
-            <span className={cn('inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium', b.isOpen ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-500/10 text-zinc-500')}>
+            <span className={cn('inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium', liveOpen ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-500/10 text-zinc-500')}>
               <Clock className="h-2.5 w-2.5" />
-              {b.isOpen ? 'Open' : 'Closed'}
+              {liveOpen ? 'Open' : 'Closed'}
             </span>
           </div>
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
@@ -148,9 +152,9 @@ export function BusinessCard({
         </div>
         <div className="mt-1.5 flex items-center gap-2">
           <RatingStars rating={b.rating} size="xs" count={b.reviewCount} />
-          <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-medium', b.isOpen ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400')}>
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: b.isOpen ? '#10b981' : '#9ca3af' }} />
-            {b.isOpen ? 'Open' : 'Closed'}
+          <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-medium', liveOpen ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400')}>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: liveOpen ? '#10b981' : '#9ca3af' }} />
+            {liveOpen ? 'Open now' : 'Closed'}
           </span>
         </div>
         <div className="mt-auto flex items-center gap-2 pt-1 text-[10px] text-muted-foreground">

@@ -59,6 +59,7 @@ model Business {
   products        Product[]
   services        Service[]
   reviews         Review[]
+  enquiries       Enquiry[]
 }
 
 model Product {
@@ -120,6 +121,27 @@ model Review {
   helpful       Int      @default(0)
   businessReply String?
   createdAt     DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model Enquiry {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerName String
+  customerEmail String
+  customerPhone String?
+  company     String?
+  subject     String
+  message     String
+  productId   String?
+  serviceName String?
+  quantity    String?
+  budget      String?
+  timeline    String?
+  status      String   @default("new") // new | read | replied | closed
+  createdAt   DateTime @default(now())
 
   @@index([businessId])
 }

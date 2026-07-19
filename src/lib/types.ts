@@ -183,3 +183,49 @@ export function timeAgo(date: string | Date): string {
   if (months < 12) return `${months}mo ago`
   return `${Math.floor(months / 12)}y ago`
 }
+
+// Compute whether a business is currently open based on its hours + current local time
+export function computeIsOpen(hours: BusinessHours, now: Date = new Date()): boolean {
+  if (!hours?.days?.length) return false
+  const day = now.getDay() // 0 = Sun ... 6 = Sat
+  const time = now.getHours() * 60 + now.getMinutes()
+  // Map JS day to our day-ranges. Our seed uses ranges like "Mon–Fri", "Sat", "Sun".
+  // We'll try to match by the day name first; fallback to range parsing.
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const today = dayNames[day]
+  for (const d of hours.days) {
+    if (d.open === 'Closed' || d.close === 'Closed') continue
+    // Exact day match (e.g. "Sat", "Sun")
+    if (d.day === today) {
+      return isInWindow(d.open, d.close, time)
+    }
+    // Range match (e.g. "Mon–Fri", "Mon-Fri")
+    if (d.day.includes('–') || d.day.includes('-')) {
+      const [start, end] = d.day.split(/[–-]/).map((s) => s.trim())
+      const order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      const si = order.indexOf(start)
+      const ei = order.indexOf(end)
+      if (si !== -1 && ei !== -1) {
+        // inclusive range
+        const inRange = si <= ei ? (day >= si && day <= ei) : (day >= si || day <= ei)
+        if (inRange) return isInWindow(d.open, d.close, time)
+      }
+    }
+  }
+  return false
+}
+
+function isInWindow(open: string, close: string, currentMinutes: number): boolean {
+  const o = parseTime(open)
+  const c = parseTime(close)
+  if (o === null || c === null) return false
+  // Handle overnight (close < open, e.g. 22:00 → 02:00)
+  if (c < o) return currentMinutes >= o || currentMinutes < c
+  return currentMinutes >= o && currentMinutes < c
+}
+
+function parseTime(s: string): number | null {
+  const m = s.match(/^(\d{1,2}):(\d{2})$/)
+  if (!m) return null
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10)
+}

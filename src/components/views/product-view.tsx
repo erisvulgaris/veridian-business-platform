@@ -7,6 +7,7 @@ import { useAppStore } from '@/lib/store'
 import type { Product, Business } from '@/lib/types'
 import { formatPrice } from '@/lib/types'
 import { VerificationBadge } from '@/components/verification-badge'
+import { RFQModal } from '@/components/rfq-modal'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
@@ -27,6 +28,7 @@ export function ProductView({ id }: { id: string }) {
   const { setView, toggleSaveProduct, savedProductIds } = useAppStore()
   const p = data?.product
   const [activeImage, setActiveImage] = React.useState(0)
+  const [rfqOpen, setRfqOpen] = React.useState(false)
 
   React.useEffect(() => { setActiveImage(0) }, [id])
 
@@ -108,7 +110,7 @@ export function ProductView({ id }: { id: string }) {
 
           {/* Actions */}
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <Button className="h-10 gap-1.5" onClick={() => toast.success('Quotation request sent to ' + p.business.name)}>
+            <Button className="h-10 gap-1.5" onClick={() => setRfqOpen(true)}>
               <ShoppingCart className="h-4 w-4" /> Request quote
             </Button>
             <Button variant="outline" className={cn('h-10 gap-1.5', saved && 'border-primary text-primary')} onClick={() => { toggleSaveProduct(p.id); toast.success(saved ? 'Removed' : 'Saved') }}>
@@ -186,6 +188,16 @@ export function ProductView({ id }: { id: string }) {
           </div>
         </section>
       )}
+
+      {/* RFQ modal */}
+      <RFQModal
+        open={rfqOpen}
+        onClose={() => setRfqOpen(false)}
+        businessId={p.business.id}
+        businessName={p.business.name}
+        businessSlug={p.business.slug}
+        context={{ type: 'product', name: p.name, id: p.id }}
+      />
     </div>
   )
 }

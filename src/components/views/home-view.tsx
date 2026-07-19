@@ -79,6 +79,9 @@ export function HomeView() {
         <CategoryRail categories={categories} />
       </div>
 
+      {/* Quick filters */}
+      <QuickFilters />
+
       {/* Map + List split */}
       <div className="grid gap-3 lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_440px]">
         <MapListSplit businesses={businesses} isLoading={isLoading} />
@@ -136,6 +139,44 @@ export function HomeView() {
         <VerificationTiers />
         <ERPTeaser />
       </div>
+    </div>
+  )
+}
+
+function QuickFilters() {
+  const { filters, toggleFilter, setMinRating, activeCategories, clearCategories } = useAppStore()
+  const chips: { label: string; icon: React.ReactNode; active: boolean; onClick: () => void }[] = [
+    { label: 'Open now', icon: <Clock className="h-3 w-3" />, active: filters.openNow, onClick: () => toggleFilter('openNow') },
+    { label: 'Verified', icon: <BadgeCheck className="h-3 w-3" />, active: filters.verifiedOnly, onClick: () => toggleFilter('verifiedOnly') },
+    { label: '4.5★+', icon: <Star className="h-3 w-3" />, active: filters.minRating === 4.5, onClick: () => setMinRating(4.5) },
+    { label: '4★+', icon: <Star className="h-3 w-3" />, active: filters.minRating === 4, onClick: () => setMinRating(4) },
+  ]
+  const anyActive = filters.openNow || filters.verifiedOnly || filters.minRating > 0 || activeCategories.length > 0
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-1.5">
+      {chips.map((c) => (
+        <button
+          key={c.label}
+          onClick={c.onClick}
+          className={cn(
+            'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
+            c.active
+              ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+              : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground'
+          )}
+        >
+          {c.icon}
+          {c.label}
+        </button>
+      ))}
+      {anyActive && (
+        <button
+          onClick={() => { clearCategories(); toggleFilter('openNow', false); toggleFilter('verifiedOnly', false); setMinRating(0) }}
+          className="inline-flex items-center gap-1 rounded-full border border-transparent px-2 py-1 text-[11px] font-medium text-muted-foreground transition hover:text-foreground"
+        >
+          <X className="h-3 w-3" /> Clear
+        </button>
+      )}
     </div>
   )
 }

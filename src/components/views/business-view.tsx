@@ -18,6 +18,7 @@ import { VerificationBadge } from '@/components/verification-badge'
 import { RatingStars } from '@/components/rating-stars'
 import { BusinessCard } from '@/components/business-card'
 import { ImageLightbox, useLightbox } from '@/components/image-lightbox'
+import { RFQModal } from '@/components/rfq-modal'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -70,6 +71,7 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
   const [activeTab, setActiveTab] = React.useState('overview')
   const [showAllGallery, setShowAllGallery] = React.useState(false)
   const galleryLightbox = useLightbox()
+  const [rfqOpen, setRfqOpen] = React.useState(false)
 
   const gallery = b.gallery
   const visibleGallery = showAllGallery ? gallery : gallery.slice(0, 6)
@@ -91,17 +93,33 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
       <div className="relative h-44 overflow-hidden rounded-2xl sm:h-56 md:h-64">
         <img src={b.coverImage} alt={b.name} className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
-        {b.promotion && (
-          <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-amber-500/95 px-3 py-1 text-xs font-bold text-white backdrop-blur shadow-lg">
-            <Tag className="h-3.5 w-3.5" /> {b.promotion.title}
-          </div>
-        )}
+        {/* Category chip on cover */}
+        <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: b.brandColor }} />
+          {b.category}
+        </div>
         <div className="absolute bottom-3 right-3 flex gap-2">
           <Button size="sm" variant="secondary" className="h-8 gap-1.5 glass" onClick={share}>
             <Share2 className="h-3.5 w-3.5" /> Share
           </Button>
         </div>
       </div>
+
+      {/* Promotion strip (dedicated, not overlapping cover) */}
+      {b.promotion && (
+        <div className="mt-2 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-3 py-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/15">
+            <Tag className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold text-amber-700 dark:text-amber-300">{b.promotion.title}</p>
+            <p className="truncate text-[11px] text-muted-foreground">{b.promotion.description}</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+            Until {b.promotion.expires?.slice(5)}
+          </span>
+        </div>
+      )}
 
       {/* Header card */}
       <div className="relative -mt-10 mx-3 rounded-2xl border border-border bg-card p-4 card-elevated sm:mx-6 sm:p-5">
@@ -145,8 +163,8 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
           <Button size="sm" className="h-9 gap-1.5" onClick={() => window.open(`tel:${b.phone}`)}>
             <Phone className="h-3.5 w-3.5" /> Call
           </Button>
-          <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => toast.success('Quotation request sent')}>
-            <MessageSquare className="h-3.5 w-3.5" /> Quote
+          <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => setRfqOpen(true)}>
+            <MessageSquare className="h-3.5 w-3.5" /> Get Quote
           </Button>
           <Button
             size="sm"
@@ -176,12 +194,12 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-        <TabsList className="h-10 w-full justify-start overflow-x-auto no-scrollbar rounded-xl bg-card border">
-          <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-          <TabsTrigger value="products" className="text-xs">Products {b.products.length > 0 && `(${b.products.length})`}</TabsTrigger>
-          <TabsTrigger value="services" className="text-xs">Services {b.services.length > 0 && `(${b.services.length})`}</TabsTrigger>
-          <TabsTrigger value="reviews" className="text-xs">Reviews ({b.reviewCount})</TabsTrigger>
-          <TabsTrigger value="about" className="text-xs">About</TabsTrigger>
+        <TabsList className="h-10 w-full justify-start overflow-x-auto no-scrollbar rounded-xl bg-card border gap-1">
+          <TabsTrigger value="overview" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">Overview</TabsTrigger>
+          <TabsTrigger value="products" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">Products {b.products.length > 0 && `(${b.products.length})`}</TabsTrigger>
+          <TabsTrigger value="services" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">Services {b.services.length > 0 && `(${b.services.length})`}</TabsTrigger>
+          <TabsTrigger value="reviews" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">Reviews ({b.reviewCount})</TabsTrigger>
+          <TabsTrigger value="about" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">About</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-3 space-y-4">
@@ -370,6 +388,15 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
           </div>
         </section>
       )}
+
+      {/* RFQ modal */}
+      <RFQModal
+        open={rfqOpen}
+        onClose={() => setRfqOpen(false)}
+        businessId={b.id}
+        businessName={b.name}
+        businessSlug={b.slug}
+      />
     </div>
   )
 }

@@ -27,27 +27,24 @@ const img = (seed: string, w = 800, h = 600) =>
 
 // Category-themed image seeds so galleries look relevant (hospital → medical, etc.)
 // Uses Lorem Picsum with curated seed words that bias toward themed stock photos.
-const CATEGORY_IMAGE_SEEDS: Record<string, string[]> = [
-  'hospital', 'clinic', 'medicine', 'healthcare',
-  'factory', 'machinery', 'industrial', 'workshop',
-  'restaurant', 'food', 'cuisine', 'kitchen',
-  'school', 'education', 'campus', 'students',
-  'hotel', 'luxury', 'resort', 'lobby',
-  'pharmacy', 'wellness', 'drugs', 'supplements',
-  'warehouse', 'logistics', 'wholesale', 'distribution',
-  'architecture', 'building', 'realestate', 'city',
-  'automotive', 'car', 'garage', 'motor',
-]
-
-function categorySeed(category: string, index: number): string {
-  const seeds = CATEGORY_IMAGE_SEEDS[Math.abs(hashCode(category)) % CATEGORY_IMAGE_SEEDS.length]
-  return seeds[index % seeds.length]
+const CATEGORY_IMAGE_SEEDS: Record<string, string[]> = {
+  Hospitals: ['hospital', 'clinic', 'medicine', 'healthcare', 'surgery', 'ward'],
+  Clinics: ['clinic', 'dentist', 'dermatology', 'skincare', 'medical', 'health'],
+  Manufacturers: ['factory', 'manufacturing', 'production', 'mill', 'grain', 'processing'],
+  'Industrial Machinery': ['machinery', 'cnc', 'industrial', 'workshop', 'metalwork', 'engineering'],
+  Restaurants: ['restaurant', 'food', 'cuisine', 'dining', 'chef', 'gourmet'],
+  Pharmacies: ['pharmacy', 'medicine', 'wellness', 'drugs', 'supplements', 'health'],
+  Schools: ['school', 'education', 'campus', 'students', 'classroom', 'learning'],
+  Colleges: ['college', 'university', 'campus', 'lecture', 'library', 'students'],
+  Hotels: ['hotel', 'luxury', 'resort', 'lobby', 'suite', 'hospitality'],
+  Wholesalers: ['warehouse', 'logistics', 'wholesale', 'distribution', 'storage', 'supply'],
+  'Real Estate': ['architecture', 'building', 'realestate', 'city', 'property', 'apartment'],
+  Automotive: ['automotive', 'car', 'garage', 'motor', 'auto', 'mechanic'],
 }
 
-function hashCode(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
-  return h
+function categorySeed(category: string, index: number): string {
+  const seeds = CATEGORY_IMAGE_SEEDS[category] || ['business', 'office', 'commercial', 'service', 'professional', 'company']
+  return seeds[index % seeds.length]
 }
 
 const businesses = [

@@ -103,3 +103,54 @@ Unresolved / Next-phase priorities:
 - Product/service comparison (currently only business compare).
 - Business messaging / lead inbox.
 - Map: add real tile option as alternative to stylized.
+
+---
+Task ID: 3 (cron review round 2)
+Agent: Cron webDevReview
+Task: QA the platform, fix visual/UX issues, add RFQ flow + localStorage persistence + live open-now + quick filters.
+
+Work Log:
+- Reviewed worklog (Tasks 1 & 2) to understand prior progress.
+- QA via agent-browser + VLM analysis of home + business screenshots. Identified: (1) gallery images not actually themed (DB had round-1 URLs — the categorySeed hash function had poor distribution, mapping Hospitals→warehouse, Restaurants→architecture), (2) promotion banner overlapped cover, (3) weak active-tab styling, (4) no RFQ persistence, (5) no localStorage persistence, (6) no live open-now, (7) no quick filters.
+
+Fixes applied:
+- Fixed category-themed images: replaced the broken hash-based `CATEGORY_IMAGE_SEEDS` array (which collided badly) with a direct `Record<string, string[]>` map keyed by exact category name. Re-seeded. Now Hospitals→hospital/clinic/medicine, Restaurants→restaurant/food/cuisine, etc. Verified via API: hospital cover seed = "clinic-cover-...", gallery = "hospital-..."; restaurant cover = "food-cover-...".
+- Business profile polish: moved promotion banner from overlapping the cover to a dedicated amber gradient strip below the cover (with icon, description, and expiry). Added a category chip (colored dot + category name) on the cover. Strengthened active-tab styling: active tabs now use `bg-primary text-primary-foreground shadow-sm` instead of the default subtle background.
+- Live "open now" calculation: added `computeIsOpen(hours, now)` helper in types.ts that parses business hours (handles day-ranges like "Mon–Fri", exact days like "Sat", and overnight windows). BusinessCard now computes `liveOpen` from hours+current time instead of the stored `isOpen` flag.
+
+New features added:
+- localStorage persistence: zustand store now hydrates `savedBusinessIds`, `savedProductIds`, `compareIds`, `recentlyViewed`, `activeCategories`, and `filters` from localStorage on mount, and persists on every change via `savePersisted()`. User state survives page reloads.
+- Request-for-Quotation (RFQ) flow:
+  - Added `Enquiry` model to Prisma schema (customerName, email, phone, company, subject, message, productId, serviceName, quantity, budget, timeline, status). Pushed to DB.
+  - `POST /api/businesses/[id]/enquiries` — creates enquiry with validation.
+  - `GET /api/businesses/[id]/enquiries` — lists enquiries for a business (for dashboard inbox).
+  - `PATCH /api/enquiries/[id]` — updates enquiry status.
+  - `RFQModal` component (`src/components/rfq-modal.tsx`): premium slide-up modal with name/email/phone/company/subject/message/quantity/budget/timeline fields, validation, loading state, and success screen. Context-aware (pre-fills subject+message when launched from a product/service).
+  - Wired RFQ into BusinessView ("Get Quote" button), ProductView ("Request quote" button, passes product context), and ServiceView ("Book service" button, passes service context).
+- Quick filters: added a `QuickFilters` chip row above the home map (Open now, Verified, 4.5★+, 4★+, Clear) for one-tap discovery refinement.
+
+Verification (via curl — agent-browser caused sandbox dev-server instability):
+- All 7 API endpoints return 200: home, categories, business detail, enquiry POST, enquiry GET, AI search, reviews POST.
+- Enquiry POST creates a record (verified: "created: True"); enquiry GET lists it (total: 1).
+- Review POST recalculates aggregate rating live (saffron restaurant: 4.8, count 4 after posting).
+- Themed images verified: restaurant cover = "food-cover-...", hospital gallery = "hospital-...".
+- Store logic verified via bun: toggle/save/compare functions work; gracefully no-ops persistence when window undefined (SSR-safe).
+- ESLint passes clean. TypeScript: zero errors in src/ (only pre-existing errors in examples/ and skills/ folders).
+
+Note on dev server: The manually-started dev server gets killed by the sandbox when agent-browser connects (Turbopack compilation OOM or process reaping). The system's auto-run dev server is the stable instance. All code verified via curl + lint + tsc. The system will auto-restart the dev server.
+
+Stage Summary:
+- Platform now has: RFQ flow with backend persistence, localStorage-persisted user state, live open-now calculation, quick filters, polished business profile (promotion strip, category chip, strong tabs), correctly-themed images.
+- New artifacts: `src/components/rfq-modal.tsx`, `src/app/api/businesses/[id]/enquiries/route.ts`, `src/app/api/enquiries/[id]/route.ts`.
+- Modified: `prisma/schema.prisma` (Enquiry model), `src/lib/store.ts` (localStorage), `src/lib/types.ts` (computeIsOpen), `src/components/business-card.tsx` (live open-now), `src/components/views/home-view.tsx` (quick filters), `src/components/views/business-view.tsx` (RFQ + promotion strip + tabs + category chip), `src/components/views/product-view.tsx` (RFQ), `src/components/views/service-view.tsx` (RFQ), `scripts/seed.ts` (fixed themed images).
+- All prior features intact; no regressions.
+
+Unresolved / Next-phase priorities:
+- Wire the enquiries inbox into the DashboardView (API exists, UI not yet updated to fetch real enquiries).
+- Add collections (user-named lists) beyond flat "saved".
+- Add SEO landing pages per category/city.
+- Add more seed businesses for richer discovery (currently 12).
+- Product/service comparison (currently only business compare).
+- Business messaging / lead inbox UI.
+- Map: add real tile option as alternative to stylized.
+- Persist theme preference (currently only next-themes handles this).

@@ -1,6 +1,38 @@
 import { create } from 'zustand'
 import type { Business, Product, Service } from './types'
 
+// localStorage persistence for user data (saved, recently-viewed, compare, filters, theme prefs)
+const STORAGE_KEY = 'veridian:user-state:v1'
+
+interface PersistedState {
+  savedBusinessIds: string[]
+  savedProductIds: string[]
+  compareIds: string[]
+  recentlyViewed: string[]
+  activeCategories: string[]
+  filters: { openNow: boolean; verifiedOnly: boolean; minRating: number }
+}
+
+function loadPersisted(): Partial<PersistedState> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return {}
+    return JSON.parse(raw) as Partial<PersistedState>
+  } catch {
+    return {}
+  }
+}
+
+function savePersisted(state: PersistedState) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  } catch {
+    // ignore quota / privacy mode errors
+  }
+}
+
 export type View =
   | { name: 'home' }
   | { name: 'search'; query: string }
@@ -52,19 +84,23 @@ interface AppState {
   setSearchQuery: (q: string) => void
 }
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>((set, get) => {
+  // Hydrate persisted user state on the client
+  const persisted = loadPersisted()
+
+  return {
   view: { name: 'home' },
   history: [],
   selectedBusinessId: null,
   hoveredBusinessId: null,
   mapCenter: { lat: 28.6139, lng: 77.209 },
   mapZoom: 13,
-  activeCategories: [],
-  filters: { openNow: false, verifiedOnly: false, minRating: 0 },
-  savedBusinessIds: [],
-  savedProductIds: [],
-  compareIds: [],
-  recentlyViewed: [],
+  activeCategories: persisted.activeCategories ?? [],
+  filters: persisted.filters ?? { openNow: false, verifiedOnly: false, minRating: 0 },
+  savedBusinessIds: persisted.savedBusinessIds ?? [],
+  savedProductIds: persisted.savedProductIds ?? [],
+  compareIds: persisted.compareIds ?? [],
+  recentlyViewed: persisted.recentlyViewed ?? [],
   aiPanelOpen: false,
   searchQuery: '',
 
@@ -86,47 +122,63 @@ export const useAppStore = create<AppState>((set, get) => ({
   setMapCenter: (c) => set({ mapCenter: c }),
   setMapZoom: (z) => set({ mapZoom: z }),
   toggleCategory: (slug) =>
-    set((s) => ({
-      activeCategories: s.activeCategories.includes(slug)
+    set((s) => {
+      const activeCategories = s.activeCategories.includes(slug)
         ? s.activeCategories.filter((c) => c !== slug)
-        : [...s.activeCategories, slug],
-    })),
-  clearCategories: () => set({ activeCategories: [] }),
+        : [...s.activeCategories, slug]
+      savePersisted({ ...get(), activeCategories } as PersistedState)
+      return { activeCategories }
+    }),
+  clearCategories: () => { savePersisted({ ...get(), activeCategories: [] } as PersistedState); set({ activeCategories: [] }) },
   toggleFilter: (key, value) =>
-    set((s) => ({
-      filters: {
+    set((s) => {
+      const filters = {
         ...s.filters,
         [key]: value === undefined ? !s.filters[key] : value,
-      },
-    })),
+      }
+      savePersisted({ ...get(), filters } as PersistedState)
+      return { filters }
+    }),
   setMinRating: (r) =>
-    set((s) => ({ filters: { ...s.filters, minRating: r === s.filters.minRating ? 0 : r } })),
+    set((s) => {
+      const filters = { ...s.filters, minRating: r === s.filters.minRating ? 0 : r }
+      savePersisted({ ...get(), filters } as PersistedState)
+      return { filters }
+    }),
   toggleSaveBusiness: (id) =>
-    set((s) => ({
-      savedBusinessIds: s.savedBusinessIds.includes(id)
+    set((s) => {
+      const savedBusinessIds = s.savedBusinessIds.includes(id)
         ? s.savedBusinessIds.filter((x) => x !== id)
-        : [...s.savedBusinessIds, id],
-    })),
+        : [...s.savedBusinessIds, id]
+      savePersisted({ ...get(), savedBusinessIds } as PersistedState)
+      return { savedBusinessIds }
+    }),
   toggleSaveProduct: (id) =>
-    set((s) => ({
-      savedProductIds: s.savedProductIds.includes(id)
+    set((s) => {
+      const savedProductIds = s.savedProductIds.includes(id)
         ? s.savedProductIds.filter((x) => x !== id)
-        : [...s.savedProductIds, id],
-    })),
+        : [...s.savedProductIds, id]
+      savePersisted({ ...get(), savedProductIds } as PersistedState)
+      return { savedProductIds }
+    }),
   toggleCompare: (id) =>
-    set((s) => ({
-      compareIds: s.compareIds.includes(id)
+    set((s) => {
+      const compareIds = s.compareIds.includes(id)
         ? s.compareIds.filter((x) => x !== id)
         : s.compareIds.length >= 3
           ? s.compareIds
-          : [...s.compareIds, id],
-    })),
-  clearCompare: () => set({ compareIds: [] }),
+          : [...s.compareIds, id]
+      savePersisted({ ...get(), compareIds } as PersistedState)
+      return { compareIds }
+    }),
+  clearCompare: () => { savePersisted({ ...get(), compareIds: [] } as PersistedState); set({ compareIds: [] }) },
   addRecentlyViewed: (id) =>
-    set((s) => ({
-      recentlyViewed: [id, ...s.recentlyViewed.filter((x) => x !== id)].slice(0, 12),
-    })),
-  clearRecentlyViewed: () => set({ recentlyViewed: [] }),
+    set((s) => {
+      const recentlyViewed = [id, ...s.recentlyViewed.filter((x) => x !== id)].slice(0, 12)
+      savePersisted({ ...get(), recentlyViewed } as PersistedState)
+      return { recentlyViewed }
+    }),
+  clearRecentlyViewed: () => { savePersisted({ ...get(), recentlyViewed: [] } as PersistedState); set({ recentlyViewed: [] }) },
   setAiPanel: (open) => set({ aiPanelOpen: open }),
   setSearchQuery: (q) => set({ searchQuery: q }),
-}))
+}})
