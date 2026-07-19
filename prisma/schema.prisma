@@ -1,0 +1,134 @@
+// Verified Business Discovery Platform — Prisma schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  tagline         String
+  description     String
+  logo            String
+  coverImage      String
+  gallery         String   // JSON array of image urls
+  category        String
+  subCategories   String   // JSON array
+  verified        String   @default("basic") // basic | verified | premium | enterprise
+  rating          Float    @default(0)
+  reviewCount     Int      @default(0)
+  lat             Float
+  lng             Float
+  address         String
+  area            String
+  city            String
+  state           String
+  pincode         String
+  phone           String
+  email           String
+  website         String
+  whatsapp        String?
+  hours           String   // JSON { days: [{day, open, close}], openNow }
+  isOpen          Boolean  @default(true)
+  foundedYear     Int
+  teamSize        String
+  languages       String   // JSON array
+  paymentMethods  String   // JSON array
+  facilities      String   // JSON array
+  deliveryOptions String   // JSON array
+  social          String   // JSON object
+  certifications  String   // JSON array
+  awards          String   // JSON array
+  viewCount       Int      @default(0)
+  responseTime    String   @default("within an hour")
+  trending        Boolean  @default(false)
+  featured        Boolean  @default(false)
+  recentlyVerified Boolean @default(false)
+  promotion       String?  // JSON { title, description, expires }
+  announcement    String?  // JSON { title, body, date }
+  brandColor      String   @default("#0f766e")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  products        Product[]
+  services        Service[]
+  reviews         Review[]
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name          String
+  slug          String
+  description   String
+  images        String   // JSON array
+  category      String
+  brand         String
+  priceMin      Int
+  priceMax      Int
+  currency      String   @default("INR")
+  variants      String   // JSON array
+  specifications String  // JSON array [{label, value}]
+  availability  String   @default("in_stock") // in_stock | low_stock | preorder | out_of_stock
+  documents     String   // JSON array
+  faqs          String   // JSON array
+  featured      Boolean  @default(false)
+  viewCount     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model Service {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  slug         String
+  description  String
+  pricing      String
+  duration     String
+  coverageArea String
+  requirements String   // JSON array
+  deliverables String   // JSON array
+  photos       String   // JSON array
+  faqs         String   // JSON array
+  featured     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model Review {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  authorName    String
+  authorAvatar  String
+  rating        Int
+  title         String
+  content       String
+  photos        String   // JSON array
+  verified      Boolean  @default(false)
+  helpful       Int      @default(0)
+  businessReply String?
+  createdAt     DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model Category {
+  id    String @id @default(cuid())
+  name  String
+  slug  String @unique
+  icon  String
+  color String
+  count Int    @default(0)
+}
