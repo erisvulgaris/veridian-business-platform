@@ -9,7 +9,7 @@ import {
   Star, ThumbsUp, Camera, ArrowRight, Navigation, FileText, Megaphone, Tag,
   Facebook, Instagram, Linkedin, Twitter, GitCompare, CheckCircle2, Loader2,
   Flame, X as XIcon, ChevronLeft, ChevronRight as ChevronRightIcon,
-  ZoomIn, Send,
+  ZoomIn, Send, Bell, BellRing,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import type { Business, Review } from '@/lib/types'
@@ -65,9 +65,10 @@ export function BusinessView({ id, slug }: { id: string; slug: string }) {
 }
 
 function BusinessDetail({ business: b }: { business: Business & { products: any[]; services: any[]; reviews: Review[]; nearby: Business[] } }) {
-  const { savedBusinessIds, toggleSaveBusiness, compareIds, toggleCompare, setView } = useAppStore()
+  const { savedBusinessIds, toggleSaveBusiness, compareIds, toggleCompare, setView, followedBusinessIds, toggleFollow } = useAppStore()
   const saved = savedBusinessIds.includes(b.id)
   const inCompare = compareIds.includes(b.id)
+  const followed = followedBusinessIds.includes(b.id)
   const [activeTab, setActiveTab] = React.useState('overview')
   const [showAllGallery, setShowAllGallery] = React.useState(false)
   const galleryLightbox = useLightbox()
@@ -159,7 +160,7 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
         </div>
 
         {/* Action buttons */}
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
           <Button size="sm" className="h-9 gap-1.5" onClick={() => window.open(`tel:${b.phone}`)}>
             <Phone className="h-3.5 w-3.5" /> Call
           </Button>
@@ -174,6 +175,15 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
           >
             {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
             {saved ? 'Saved' : 'Save'}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className={cn('h-9 gap-1.5', followed && 'border-primary text-primary bg-primary/5')}
+            onClick={() => { toggleFollow(b.id); toast.success(followed ? 'Unfollowed' : 'Following — you\'ll see updates') }}
+          >
+            {followed ? <BellRing className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
+            {followed ? 'Following' : 'Follow'}
           </Button>
           <Button
             size="sm"
@@ -803,9 +813,7 @@ function ReviewCard({ review: r }: { review: Review }) {
             </div>
           )}
           <div className="mt-2 flex items-center gap-3">
-            <button className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground">
-              <ThumbsUp className="h-3 w-3" /> Helpful ({r.helpful})
-            </button>
+            <HelpfulButton reviewId={r.id} count={r.helpful} />
           </div>
         </div>
       </div>
@@ -887,5 +895,37 @@ function EmptyState({ icon, title, subtitle }: { icon: React.ReactNode; title: s
       <p className="text-sm font-semibold">{title}</p>
       <p className="text-xs text-muted-foreground">{subtitle}</p>
     </div>
+  )
+}
+
+function HelpfulButton({ reviewId, count }: { reviewId: string; count: number }) {
+  const [helpful, setHelpful] = React.useState(count)
+  const [voted, setVoted] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+  const vote = async () => {
+    if (voted || loading) return
+    setLoading(true)
+    setVoted(true)
+    setHelpful((h) => h + 1)
+    try {
+      await fetch(`/api/reviews/${reviewId}`, { method: 'PATCH' })
+    } catch {
+      setVoted(false)
+      setHelpful((h) => h - 1)
+    } finally {
+      setLoading(false)
+    }
+  }
+  return (
+    <button
+      onClick={vote}
+      disabled={voted}
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] transition',
+        voted ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+      )}
+    >
+      <ThumbsUp className={cn('h-3 w-3', voted && 'fill-primary')} /> Helpful ({helpful})
+    </button>
   )
 }

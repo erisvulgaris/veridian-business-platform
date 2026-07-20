@@ -183,79 +183,100 @@ function QuickFilters() {
 
 function MapListSplit({ businesses, isLoading }: { businesses: Business[]; isLoading: boolean }) {
   const [showFilters, setShowFilters] = React.useState(false)
+  const [mobileMode, setMobileMode] = React.useState<'map' | 'list'>('list')
   const { filters, toggleFilter, setMinRating, setView } = useAppStore()
   return (
     <>
-      <div className="relative h-[60vh] min-h-[380px] overflow-hidden rounded-2xl border border-border lg:h-[calc(100vh-220px)]">
-        {isLoading ? (
-          <Skeleton className="h-full w-full" />
-        ) : (
-          <MapView businesses={businesses} className="h-full w-full" />
-        )}
+      {/* Mobile view toggle */}
+      <div className="mb-2 flex items-center gap-1 lg:hidden">
         <button
-          onClick={() => setShowFilters((s) => !s)}
-          className="absolute left-3 top-3 glass card-elevated flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-medium hover:bg-accent transition"
+          onClick={() => setMobileMode('list')}
+          className={cn('flex-1 rounded-lg border py-1.5 text-xs font-medium transition', mobileMode === 'list' ? 'border-primary bg-primary text-primary-foreground' : 'border-border')}
         >
-          <Filter className="h-3.5 w-3.5" />
-          Filters
-          {(filters.openNow || filters.verifiedOnly || filters.minRating > 0) && (
-            <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
-          )}
+          List view
         </button>
-        {showFilters && (
-          <div className="absolute left-3 top-14 z-30 w-64 glass card-elevated rounded-2xl p-3 animate-scale-in">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-xs font-semibold">Filters</p>
-              <button onClick={() => setShowFilters(false)} className="text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
-            </div>
-            <div className="space-y-2">
-              <FilterToggle label="Open now" icon={<Clock className="h-3.5 w-3.5" />} active={filters.openNow} onClick={() => toggleFilter('openNow')} />
-              <FilterToggle label="Verified only" icon={<BadgeCheck className="h-3.5 w-3.5" />} active={filters.verifiedOnly} onClick={() => toggleFilter('verifiedOnly')} />
-              <div className="pt-1">
-                <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Minimum rating</p>
-                <div className="flex gap-1.5">
-                  {[3, 3.5, 4, 4.5].map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => setMinRating(r)}
-                      className={cn(
-                        'flex-1 rounded-lg border px-2 py-1 text-[11px] font-medium transition',
-                        filters.minRating === r ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40'
-                      )}
-                    >
-                      {r}★+
-                    </button>
-                  ))}
+        <button
+          onClick={() => setMobileMode('map')}
+          className={cn('flex-1 rounded-lg border py-1.5 text-xs font-medium transition', mobileMode === 'map' ? 'border-primary bg-primary text-primary-foreground' : 'border-border')}
+        >
+          Map view
+        </button>
+      </div>
+
+      <div className={cn(mobileMode === 'map' ? 'block' : 'hidden', 'lg:block')}>
+        <div className="relative h-[60vh] min-h-[380px] overflow-hidden rounded-2xl border border-border lg:h-[calc(100vh-220px)]">
+          {isLoading ? (
+            <Skeleton className="h-full w-full" />
+          ) : (
+            <MapView businesses={businesses} className="h-full w-full" />
+          )}
+          <button
+            onClick={() => setShowFilters((s) => !s)}
+            className="absolute left-3 top-3 glass card-elevated flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-medium hover:bg-accent transition"
+          >
+            <Filter className="h-3.5 w-3.5" />
+            Filters
+            {(filters.openNow || filters.verifiedOnly || filters.minRating > 0) && (
+              <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+            )}
+          </button>
+          {showFilters && (
+            <div className="absolute left-3 top-14 z-30 w-64 glass card-elevated rounded-2xl p-3 animate-scale-in">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold">Filters</p>
+                <button onClick={() => setShowFilters(false)} className="text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
+              </div>
+              <div className="space-y-2">
+                <FilterToggle label="Open now" icon={<Clock className="h-3.5 w-3.5" />} active={filters.openNow} onClick={() => toggleFilter('openNow')} />
+                <FilterToggle label="Verified only" icon={<BadgeCheck className="h-3.5 w-3.5" />} active={filters.verifiedOnly} onClick={() => toggleFilter('verifiedOnly')} />
+                <div className="pt-1">
+                  <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Minimum rating</p>
+                  <div className="flex gap-1.5">
+                    {[3, 3.5, 4, 4.5].map((r) => (
+                      <button
+                        key={r}
+                        onClick={() => setMinRating(r)}
+                        className={cn(
+                          'flex-1 rounded-lg border px-2 py-1 text-[11px] font-medium transition',
+                          filters.minRating === r ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40'
+                        )}
+                      >
+                        {r}★+
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      <div className="flex h-[60vh] min-h-[380px] flex-col rounded-2xl border border-border bg-card/40 lg:h-[calc(100vh-220px)]">
-        <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-          <div>
-            <h2 className="text-sm font-semibold">Nearby businesses</h2>
-            <p className="text-[11px] text-muted-foreground">{businesses.length} places on the map</p>
+      <div className={cn(mobileMode === 'list' ? 'block' : 'hidden', 'lg:block', 'mt-0 lg:mt-0')}>
+        <div className="flex h-[60vh] min-h-[380px] flex-col rounded-2xl border border-border bg-card/40 lg:h-[calc(100vh-220px)]">
+          <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+            <div>
+              <h2 className="text-sm font-semibold">Nearby businesses</h2>
+              <p className="text-[11px] text-muted-foreground">{businesses.length} places on the map</p>
+            </div>
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setView({ name: 'search', query: '' })}>
+              View all <ArrowRight className="ml-1 h-3 w-3" />
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setView({ name: 'search', query: '' })}>
-            View all <ArrowRight className="ml-1 h-3 w-3" />
-          </Button>
-        </div>
-        <div className="scrollbar-thin flex-1 space-y-2 overflow-y-auto p-3">
-          {isLoading
-            ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex gap-3 rounded-xl p-3">
-                  <Skeleton className="h-[88px] w-[112px] rounded-lg" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-3 w-3/4" />
-                    <Skeleton className="h-2.5 w-1/2" />
-                    <Skeleton className="h-2.5 w-2/3" />
+          <div className="scrollbar-thin flex-1 space-y-2 overflow-y-auto p-3">
+            {isLoading
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex gap-3 rounded-xl p-3">
+                    <Skeleton className="h-[88px] w-[112px] rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-3 w-3/4" />
+                      <Skeleton className="h-2.5 w-1/2" />
+                      <Skeleton className="h-2.5 w-2/3" />
+                    </div>
                   </div>
-                </div>
-              ))
-            : businesses.slice(0, 12).map((b) => <BusinessCard key={b.id} business={b} layout="list" />)}
+                ))
+              : businesses.slice(0, 12).map((b) => <BusinessCard key={b.id} business={b} layout="list" />)}
+          </div>
         </div>
       </div>
     </>

@@ -7,6 +7,7 @@ const STORAGE_KEY = 'veridian:user-state:v1'
 interface PersistedState {
   savedBusinessIds: string[]
   savedProductIds: string[]
+  followedBusinessIds: string[]
   compareIds: string[]
   recentlyViewed: string[]
   activeCategories: string[]
@@ -59,6 +60,7 @@ interface AppState {
   }
   savedBusinessIds: string[]
   savedProductIds: string[]
+  followedBusinessIds: string[]
   compareIds: string[]
   recentlyViewed: string[]
   aiPanelOpen: boolean
@@ -76,6 +78,7 @@ interface AppState {
   setMinRating: (r: number) => void
   toggleSaveBusiness: (id: string) => void
   toggleSaveProduct: (id: string) => void
+  toggleFollow: (id: string) => void
   toggleCompare: (id: string) => void
   clearCompare: () => void
   addRecentlyViewed: (id: string) => void
@@ -99,6 +102,7 @@ export const useAppStore = create<AppState>((set, get) => {
   filters: persisted.filters ?? { openNow: false, verifiedOnly: false, minRating: 0 },
   savedBusinessIds: persisted.savedBusinessIds ?? [],
   savedProductIds: persisted.savedProductIds ?? [],
+  followedBusinessIds: persisted.followedBusinessIds ?? [],
   compareIds: persisted.compareIds ?? [],
   recentlyViewed: persisted.recentlyViewed ?? [],
   aiPanelOpen: false,
@@ -160,6 +164,14 @@ export const useAppStore = create<AppState>((set, get) => {
         : [...s.savedProductIds, id]
       savePersisted({ ...get(), savedProductIds } as PersistedState)
       return { savedProductIds }
+    }),
+  toggleFollow: (id) =>
+    set((s) => {
+      const followedBusinessIds = s.followedBusinessIds.includes(id)
+        ? s.followedBusinessIds.filter((x) => x !== id)
+        : [...s.followedBusinessIds, id]
+      savePersisted({ ...get(), followedBusinessIds } as PersistedState)
+      return { followedBusinessIds }
     }),
   toggleCompare: (id) =>
     set((s) => {
