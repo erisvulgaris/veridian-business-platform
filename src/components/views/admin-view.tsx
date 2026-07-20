@@ -25,7 +25,7 @@ const PIE_COLORS = ['#0f766e', '#0891b2', '#7c3aed', '#f59e0b', '#ef4444', '#10b
 
 export function AdminView() {
   const { user } = useAuth()
-  const [tab, setTab] = React.useState<'overview' | 'businesses' | 'users' | 'reviews' | 'claims'>('overview')
+  const [tab, setTab] = React.useState<'overview' | 'businesses' | 'users' | 'reviews' | 'claims' | 'subscriptions' | 'audit'>('overview')
 
   const tabs = [
     { key: 'overview', label: 'Overview', icon: TrendingUp },
@@ -33,6 +33,8 @@ export function AdminView() {
     { key: 'users', label: 'Users', icon: Users },
     { key: 'reviews', label: 'Reviews', icon: Star },
     { key: 'claims', label: 'Claims', icon: CheckCircle2 },
+    { key: 'subscriptions', label: 'Billing', icon: DollarSign },
+    { key: 'audit', label: 'Audit Log', icon: FileText },
   ] as const
 
   return (
@@ -74,6 +76,8 @@ export function AdminView() {
       {tab === 'users' && <UserManagement />}
       {tab === 'reviews' && <ReviewModeration />}
       {tab === 'claims' && <ClaimManagement />}
+      {tab === 'subscriptions' && <SubscriptionManagement />}
+      {tab === 'audit' && <AuditLog />}
     </div>
   )
 }
@@ -541,6 +545,147 @@ function StatCard({ icon, label, value, sub, color }: { icon: React.ReactNode; l
       <p className="mt-2 text-lg font-bold">{value}</p>
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
       {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
+    </div>
+  )
+}
+
+// === Subscription Management ===
+function SubscriptionManagement() {
+  const [planFilter, setPlanFilter] = React.useState('all')
+  const [statusFilter, setStatusFilter] = React.useState('all')
+  const query = new URLSearchParams({ plan: planFilter, status: statusFilter }).toString()
+  const { data, isLoading, mutate } = useSWR(`/api/admin/subscriptions?${query}`, fetcher)
+  const subscriptions = data?.subscriptions ?? []
+  const stats = data?.stats
+  const [acting, setActing] = React.useState<string | null>(null)
+
+  const act = async (id: string, action: string, plan?: string) => {
+    setActing(id + action)
+    try {
+      const res = await fetch('/api/admin/subscriptions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action, plan }),
+      })
+      const d = await res.json()
+      if (!res.ok) { toast.error(d.error); return }
+      toast.success(`Subscription ${action}ed`)
+      mutate()
+    } finally {
+      setActing(null)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatCard icon={<DollarSign className="h-4 w-4" />} label="MRR" value={formatPrice(stats?.mrr || 0, 0)} color="#10b981" />
+        <StatCard icon={<Crown className="h-4 w-4" />} label="Premium" value={String(stats?.premium || 0)} color="#f59e0b" />
+        <StatCard icon={<Shield className="h-4 w-4" />} label="Enterprise" value={String(stats?.enterprise || 0)} color="#7c3aed" />
+        <StatCard icon={<CheckCircle2 className="h-4 w-4" />} label="Active" value={String(stats?.activeCount || 0)} color="#0f766e" />
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-2">
+        <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className="h-9 rounded-lg border border-border bg-card px-2 text-sm outline-none">
+          <option value="all">All plans</option>
+          <option value="free">Free</option>
+          <option value="premium">Premium</option>
+          <option value="enterprise">Enterprise</option>
+        </select>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-9 rounded-lg border border-border bg-card px-2 text-sm outline-none">
+          <option value="all">All status</option>
+          <option value="active">Active</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="expired">Expired</option>
+        </select>
+        <span className="ml-auto text-xs text-muted-foreground">{subscriptions.length} subscriptions</span>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+      ) : subscriptions.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">No subscriptions found. Create subscriptions from business profiles.</div>
+      ) : (
+        <div className="space-y-2">
+          {subscriptions.map((s: any) => (
+            <div key={s.id} className="rounded-xl border border-border bg-card p-3 card-elevated">
+              <div className="flex items-center gap-3">
+                <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg', s.plan === 'enterprise' ? 'bg-violet-500/10 text-violet-500' : s.plan === 'premium' ? 'bg-amber-500/10 text-amber-500' : 'bg-secondary text-muted-foreground')}>
+                  {s.plan === 'enterprise' ? <Shield className="h-4 w-4" /> : s.plan === 'premium' ? <Crown className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">{s.business?.name || 'Unknown'}</p>
+                  <p className="text-[10px] text-muted-foreground capitalize">{s.plan} · {s.billingCycle} · {formatPrice(s.amount, 0)}/mo</p>
+                </div>
+                <span className={cn('rounded-full px-1.5 py-0.5 text-[9px] font-bold capitalize', s.status === 'active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-zinc-500/10 text-zinc-500')}>{s.status}</span>
+              </div>
+              <div className="mt-2 flex gap-1.5">
+                {s.plan !== 'premium' && <Button size="sm" variant="ghost" className="h-7 gap-1 text-[10px] text-amber-600" onClick={() => act(s.id, 'upgrade', 'premium')} disabled={acting === s.id + 'upgrade'}><Crown className="h-3 w-3" /> Upgrade to Premium</Button>}
+                {s.plan !== 'enterprise' && <Button size="sm" variant="ghost" className="h-7 gap-1 text-[10px] text-violet-600" onClick={() => act(s.id, 'upgrade', 'enterprise')} disabled={acting === s.id + 'upgrade'}><Shield className="h-3 w-3" /> Upgrade to Enterprise</Button>}
+                {s.status === 'active' && <Button size="sm" variant="ghost" className="h-7 gap-1 text-[10px] text-rose-500" onClick={() => act(s.id, 'cancel')} disabled={acting === s.id + 'cancel'}><XCircle className="h-3 w-3" /> Cancel</Button>}
+                {s.status !== 'active' && <Button size="sm" variant="ghost" className="h-7 gap-1 text-[10px] text-emerald-600" onClick={() => act(s.id, 'reactivate')} disabled={acting === s.id + 'reactivate'}><CheckCircle2 className="h-3 w-3" /> Reactivate</Button>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// === Audit Log ===
+function AuditLog() {
+  const { data, isLoading } = useSWR('/api/admin/audit-log?limit=50', fetcher)
+  const actions = data?.actions ?? []
+
+  const actionIcon = (action: string) => {
+    if (action.includes('verify')) return <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" />
+    if (action.includes('suspend') || action.includes('delete') || action.includes('remove') || action.includes('cancel')) return <XCircle className="h-3.5 w-3.5 text-rose-500" />
+    if (action.includes('approve') || action.includes('activate') || action.includes('publish')) return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+    if (action.includes('feature')) return <Crown className="h-3.5 w-3.5 text-amber-500" />
+    if (action.includes('upgrade')) return <ArrowRight className="h-3.5 w-3.5 text-violet-500" />
+    return <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">Audit Log</h3>
+          <p className="text-[11px] text-muted-foreground">All admin actions — {actions.length} entries</p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
+      ) : actions.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-12 text-center">
+          <FileText className="h-8 w-8 text-muted-foreground/30" />
+          <p className="mt-2 text-sm font-medium text-muted-foreground">No actions logged yet</p>
+          <p className="text-xs text-muted-foreground/70">Admin actions will appear here</p>
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {actions.map((a: any) => (
+            <div key={a.id} className="flex items-start gap-3 rounded-xl border border-border bg-card p-3 card-elevated">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-secondary">
+                {actionIcon(a.action)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-semibold capitalize">{a.action.replace(/_/g, ' ')}</p>
+                  <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] text-muted-foreground">{a.targetType}</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground">{timeAgo(a.createdAt)}</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">by {a.admin?.name || 'Unknown'} · {a.admin?.email}</p>
+                <p className="text-[10px] text-muted-foreground/70 font-mono">target: {a.targetId.slice(0, 20)}…</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
