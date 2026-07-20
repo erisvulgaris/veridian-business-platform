@@ -6,7 +6,7 @@ import { useAppStore } from '@/lib/store'
 import { AppHeader } from '@/components/app-header'
 import { AppFooter } from '@/components/app-footer'
 import { AiAssistant } from '@/components/ai-assistant'
-import { ProductCompareTray } from '@/components/product-compare-tray'
+import { CompareTray } from '@/components/compare-tray'
 import { HomeView } from '@/components/views/home-view'
 import { BusinessView } from '@/components/views/business-view'
 import { ProductView } from '@/components/views/product-view'
@@ -18,6 +18,7 @@ import { SavedView } from '@/components/views/saved-view'
 import { CollectionsView } from '@/components/views/collections-view'
 import { CompareView } from '@/components/views/compare-view'
 import { ProductCompareView } from '@/components/views/product-compare-view'
+import { ServiceCompareView } from '@/components/views/service-compare-view'
 
 export default function Home() {
   const { view, compareIds } = useAppStore()
@@ -45,7 +46,7 @@ export default function Home() {
       </main>
       <AppFooter />
       <AiAssistant />
-      <ProductCompareTray />
+      <CompareTray />
     </div>
   )
 }
@@ -63,6 +64,7 @@ function viewKey(view: ReturnType<typeof useAppStore.getState>['view']): string 
     case 'collections': return 'collections'
     case 'compare': return `compare:${view.ids.join(',')}`
     case 'compare-products': return `compare-prod:${view.ids.join(',')}`
+    case 'compare-services': return `compare-svc:${view.ids.join(',')}`
     default: return 'home'
   }
 }
@@ -80,6 +82,7 @@ function renderView(view: ReturnType<typeof useAppStore.getState>['view'], compa
     case 'collections': return <CollectionsView />
     case 'compare': return <CompareView ids={view.ids} />
     case 'compare-products': return <ProductCompareView ids={view.ids} />
+    case 'compare-services': return <ServiceCompareView ids={view.ids} />
     default: return <HomeView />
   }
 }

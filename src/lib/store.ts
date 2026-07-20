@@ -10,6 +10,7 @@ interface PersistedState {
   followedBusinessIds: string[]
   compareIds: string[]
   compareProductIds: string[]
+  compareServiceIds: string[]
   recentlyViewed: string[]
   collections: { id: string; name: string; businessIds: string[]; createdAt: number }[]
   activeCategories: string[]
@@ -48,6 +49,7 @@ export type View =
   | { name: 'collections' }
   | { name: 'compare'; ids: string[] }
   | { name: 'compare-products'; ids: string[] }
+  | { name: 'compare-services'; ids: string[] }
 
 interface AppState {
   view: View
@@ -67,6 +69,7 @@ interface AppState {
   followedBusinessIds: string[]
   compareIds: string[]
   compareProductIds: string[]
+  compareServiceIds: string[]
   recentlyViewed: string[]
   collections: { id: string; name: string; businessIds: string[]; createdAt: number }[]
   activeCollectionId: string | null
@@ -90,6 +93,8 @@ interface AppState {
   clearCompare: () => void
   toggleCompareProduct: (id: string) => void
   clearCompareProducts: () => void
+  toggleCompareService: (id: string) => void
+  clearCompareServices: () => void
   addRecentlyViewed: (id: string) => void
   clearRecentlyViewed: () => void
   createCollection: (name: string) => string
@@ -120,6 +125,7 @@ export const useAppStore = create<AppState>((set, get) => {
   followedBusinessIds: persisted.followedBusinessIds ?? [],
   compareIds: persisted.compareIds ?? [],
   compareProductIds: persisted.compareProductIds ?? [],
+  compareServiceIds: persisted.compareServiceIds ?? [],
   recentlyViewed: persisted.recentlyViewed ?? [],
   collections: persisted.collections ?? [],
   activeCollectionId: null,
@@ -213,6 +219,17 @@ export const useAppStore = create<AppState>((set, get) => {
       return { compareProductIds }
     }),
   clearCompareProducts: () => { savePersisted({ ...get(), compareProductIds: [] } as PersistedState); set({ compareProductIds: [] }) },
+  toggleCompareService: (id) =>
+    set((s) => {
+      const compareServiceIds = s.compareServiceIds.includes(id)
+        ? s.compareServiceIds.filter((x) => x !== id)
+        : s.compareServiceIds.length >= 3
+          ? s.compareServiceIds
+          : [...s.compareServiceIds, id]
+      savePersisted({ ...get(), compareServiceIds } as PersistedState)
+      return { compareServiceIds }
+    }),
+  clearCompareServices: () => { savePersisted({ ...get(), compareServiceIds: [] } as PersistedState); set({ compareServiceIds: [] }) },
   addRecentlyViewed: (id) =>
     set((s) => {
       const recentlyViewed = [id, ...s.recentlyViewed.filter((x) => x !== id)].slice(0, 12)

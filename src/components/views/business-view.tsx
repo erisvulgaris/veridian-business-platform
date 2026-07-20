@@ -19,6 +19,7 @@ import { RatingStars } from '@/components/rating-stars'
 import { BusinessCard } from '@/components/business-card'
 import { ImageLightbox, useLightbox } from '@/components/image-lightbox'
 import { RFQModal } from '@/components/rfq-modal'
+import { ClaimModal } from '@/components/claim-modal'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -73,6 +74,7 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
   const [showAllGallery, setShowAllGallery] = React.useState(false)
   const galleryLightbox = useLightbox()
   const [rfqOpen, setRfqOpen] = React.useState(false)
+  const [claimOpen, setClaimOpen] = React.useState(false)
 
   const gallery = b.gallery
   const visibleGallery = showAllGallery ? gallery : gallery.slice(0, 6)
@@ -406,11 +408,35 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
         </section>
       )}
 
+      {/* Claim CTA */}
+      <section className="mt-8">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/20 p-5 text-center sm:flex-row sm:text-left">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold">Are you the owner of {b.name}?</p>
+            <p className="text-xs text-muted-foreground">Claim this business to manage your profile, products, services, enquiries and analytics — all free.</p>
+          </div>
+          <Button size="sm" className="gap-1.5 shrink-0" onClick={() => setClaimOpen(true)}>
+            <ShieldCheck className="h-3.5 w-3.5" /> Claim this business
+          </Button>
+        </div>
+      </section>
+
       {/* RFQ modal */}
       <RFQModal
         open={rfqOpen}
         onClose={() => setRfqOpen(false)}
         businessId={b.id}
+        businessName={b.name}
+        businessSlug={b.slug}
+      />
+
+      {/* Claim modal */}
+      <ClaimModal
+        open={claimOpen}
+        onClose={() => setClaimOpen(false)}
         businessName={b.name}
         businessSlug={b.slug}
       />
@@ -575,23 +601,42 @@ function ProductCard({ product: p, businessId }: { product: any; businessId: str
 }
 
 function ServiceCard({ service: s, businessId }: { service: any; businessId: string }) {
-  const { setView } = useAppStore()
+  const { setView, toggleCompareService, compareServiceIds } = useAppStore()
+  const inCompare = compareServiceIds.includes(s.id)
   return (
-    <button
-      onClick={() => setView({ name: 'service', id: s.id })}
-      className="group flex gap-3 rounded-xl border border-border bg-card p-3 text-left transition hover:border-primary/40 hover:shadow-md"
-    >
-      <img src={s.photos?.[0]} alt={s.name} className="h-16 w-16 shrink-0 rounded-lg object-cover" />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold">{s.name}</p>
-        <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{s.description}</p>
-        <div className="mt-1.5 flex items-center gap-2 text-[10px] text-muted-foreground">
-          <span className="inline-flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{s.duration}</span>
-          <span className="inline-flex items-center gap-0.5"><Navigation className="h-2.5 w-2.5" />{s.coverageArea}</span>
+    <div className="group relative flex gap-3 rounded-xl border border-border bg-card p-3 transition hover:border-primary/40 hover:shadow-md">
+      <button
+        onClick={() => setView({ name: 'service', id: s.id })}
+        className="flex min-w-0 flex-1 gap-3 text-left"
+      >
+        <img src={s.photos?.[0]} alt={s.name} className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">{s.name}</p>
+          <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{s.description}</p>
+          <div className="mt-1.5 flex items-center gap-2 text-[10px] text-muted-foreground">
+            <span className="inline-flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{s.duration}</span>
+            <span className="inline-flex items-center gap-0.5"><Navigation className="h-2.5 w-2.5" />{s.coverageArea}</span>
+          </div>
+          <p className="mt-1 text-xs font-bold text-primary">{s.pricing}</p>
         </div>
-        <p className="mt-1 text-xs font-bold text-primary">{s.pricing}</p>
-      </div>
-    </button>
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          if (!inCompare && compareServiceIds.length >= 3) { toast.error('Compare max 3 services'); return }
+          toggleCompareService(s.id)
+          toast.success(inCompare ? 'Removed from compare' : `Added to compare (${compareServiceIds.length + 1}/3)`)
+        }}
+        className={cn(
+          'absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full backdrop-blur transition',
+          inCompare ? 'bg-primary text-primary-foreground' : 'bg-white/85 text-foreground opacity-0 group-hover:opacity-100 hover:bg-white'
+        )}
+        aria-label="Compare service"
+        title="Add to compare"
+      >
+        <GitCompare className="h-3.5 w-3.5" />
+      </button>
+    </div>
   )
 }
 

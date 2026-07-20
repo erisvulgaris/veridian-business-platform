@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import useSWR from 'swr'
-import { Wrench, ChevronRight, Clock, MapPin, CheckCircle2, FileText, Store, Calendar, Phone, Share2 } from 'lucide-react'
+import { Wrench, ChevronRight, Clock, MapPin, CheckCircle2, FileText, Store, Calendar, Phone, Share2, GitCompare } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import type { Service, Business } from '@/lib/types'
 import { VerificationBadge } from '@/components/verification-badge'
@@ -10,12 +10,13 @@ import { RFQModal } from '@/components/rfq-modal'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
 export function ServiceView({ id }: { id: string }) {
   const { data, isLoading } = useSWR<{ service: Service & { business: Business } }>(`/api/services/${id}`, fetcher)
-  const { setView } = useAppStore()
+  const { setView, toggleCompareService, compareServiceIds } = useAppStore()
   const s = data?.service
   const [activePhoto, setActivePhoto] = React.useState(0)
   const [rfqOpen, setRfqOpen] = React.useState(false)
@@ -94,15 +95,26 @@ export function ServiceView({ id }: { id: string }) {
           <VerificationBadge level={s.business.verified} size="xs" />
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Button className="h-10 gap-1.5" onClick={() => setRfqOpen(true)}>
-            <Calendar className="h-4 w-4" /> Book service
+            <Calendar className="h-4 w-4" /> <span className="hidden sm:inline">Book</span>
           </Button>
           <Button variant="outline" className="h-10 gap-1.5" onClick={() => window.open(`tel:${s.business.phone}`)}>
-            <Phone className="h-4 w-4" /> Call
+            <Phone className="h-4 w-4" /> <span className="hidden sm:inline">Call</span>
+          </Button>
+          <Button
+            variant="outline"
+            className={cn('h-10 gap-1.5', compareServiceIds.includes(s.id) && 'border-primary text-primary bg-primary/5')}
+            onClick={() => {
+              if (!compareServiceIds.includes(s.id) && compareServiceIds.length >= 3) { toast.error('Compare max 3 services'); return }
+              toggleCompareService(s.id)
+              toast.success(compareServiceIds.includes(s.id) ? 'Removed from compare' : `Added to compare (${compareServiceIds.length + 1}/3)`)
+            }}
+          >
+            <GitCompare className="h-4 w-4" /> {compareServiceIds.includes(s.id) ? 'Added' : 'Compare'}
           </Button>
           <Button variant="outline" className="h-10 gap-1.5" onClick={share}>
-            <Share2 className="h-4 w-4" /> Share
+            <Share2 className="h-4 w-4" /> <span className="hidden sm:inline">Share</span>
           </Button>
         </div>
 

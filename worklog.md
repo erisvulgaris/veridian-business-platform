@@ -325,3 +325,45 @@ Unresolved / Next-phase priorities:
 - Business claim flow.
 - Collections: share collection link.
 - Add more seed businesses for richer analytics data.
+
+---
+Task ID: 8 (cron review round 7)
+Agent: Cron webDevReview
+Task: QA the platform, build service comparison + business claim flow + unified compare tray.
+
+Work Log:
+- Reviewed worklog (Tasks 1-7). Platform had: 20 businesses, collections, RFQ, dashboard with analytics charts, follow/helpful voting, map/list toggle, localStorage, "opens at" status, hours highlight, product comparison with price diff, share on all views.
+- QA via agent-browser: home, business profile, product detail, search all functional. No errors. Tested search ("solar energy" → Solaris top result), product compare flow.
+
+New features added:
+- Service comparison feature (full):
+  - Store: `compareServiceIds` array + `toggleCompareService` + `clearCompareServices`, localStorage-persisted.
+  - `ServiceCompareView` (`src/components/views/service-compare-view.tsx`): side-by-side table comparing up to 3 services across Pricing, Duration, Coverage, Provider, Deliverables, Requirements. Fetches each service by ID. Remove button per service, "Add service" placeholders, clear all.
+  - Compare toggle on ServiceCard (business profile services tab): GitCompare icon button bottom-right, hover-reveal, primary when added.
+  - Compare button on ServiceView detail: 4-column actions (Book, Call, Compare, Share).
+  - Wired into page.tsx view router (`compare-services` view).
+- Unified CompareTray (`src/components/compare-tray.tsx`): replaces ProductCompareTray. Shows both products and services in separate rows, each with its own Compare button and clear button. Animated slide-up. Replaces the old product-only tray.
+- Business claim flow:
+  - `POST /api/businesses/[id]/claim` API: validates claimer name, email, role, proof. Returns success message.
+  - `ClaimModal` component (`src/components/claim-modal.tsx`): premium slide-up modal with name/email/phone/role(select)/proof fields, validation, loading state, success screen with verification timeline.
+  - "Claim this business" CTA banner on business profile (gradient card with ShieldCheck icon, appears before nearby section). Opens ClaimModal.
+
+Verification:
+- agent-browser: opened Aarogya hospital → Services tab → clicked Compare on 2 services → unified CompareTray appeared showing both services → clicked Compare → ServiceCompareView opened with side-by-side comparison (Pricing, Duration, Coverage, Provider, Deliverables). Claim CTA visible on business profile → clicked → ClaimModal opened with form fields.
+- APIs: home 200, claim POST 200, analytics 200.
+- ESLint: clean.
+
+Stage Summary:
+- Platform now has: service comparison (up to 3), unified compare tray (products + services), business claim flow with modal + API.
+- New artifacts: `src/components/views/service-compare-view.tsx`, `src/components/compare-tray.tsx`, `src/components/claim-modal.tsx`, `src/app/api/businesses/[id]/claim/route.ts`.
+- Modified: `src/lib/store.ts` (compareServiceIds + methods), `src/app/page.tsx` (compare-services route + CompareTray), `src/components/views/business-view.tsx` (ServiceCard compare + claim CTA + ClaimModal), `src/components/views/service-view.tsx` (compare button + 4-col actions).
+- All prior features intact; no regressions. Old ProductCompareTray replaced by unified CompareTray.
+
+Unresolved / Next-phase priorities:
+- SEO landing pages per category/city.
+- Business messaging / real-time chat.
+- Map: real tile option.
+- User authentication (NextAuth.js).
+- Collections: share collection link.
+- Add more seed businesses.
+- Claim approval workflow (admin review).
