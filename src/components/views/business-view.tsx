@@ -518,7 +518,8 @@ function ServiceRow({ service: s }: { service: any }) {
 }
 
 function ProductCard({ product: p, businessId }: { product: any; businessId: string }) {
-  const { setView } = useAppStore()
+  const { setView, toggleCompareProduct, compareProductIds } = useAppStore()
+  const inCompare = compareProductIds.includes(p.id)
   const availabilityConfig: Record<string, { label: string; color: string }> = {
     in_stock: { label: 'In stock', color: '#10b981' },
     low_stock: { label: 'Low stock', color: '#f59e0b' },
@@ -528,28 +529,48 @@ function ProductCard({ product: p, businessId }: { product: any; businessId: str
   }
   const av = availabilityConfig[p.availability] || availabilityConfig.in_stock
   return (
-    <button
-      onClick={() => setView({ name: 'product', id: p.id })}
-      className="group overflow-hidden rounded-xl border border-border bg-card text-left transition hover:border-primary/40 hover:shadow-md"
+    <div
+      className="group relative overflow-hidden rounded-xl border border-border bg-card transition hover:border-primary/40 hover:shadow-md"
     >
-      <div className="relative aspect-[4/3] overflow-hidden">
-        <img src={p.images?.[0]} alt={p.name} className="h-full w-full object-cover transition group-hover:scale-105" />
-        {p.featured && <span className="absolute left-2 top-2 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white">FEATURED</span>}
-        <span className="absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur" style={{ background: av.color + 'cc' }}>{av.label}</span>
-      </div>
-      <div className="p-2.5">
-        <p className="truncate text-xs font-semibold">{p.name}</p>
-        <p className="truncate text-[10px] text-muted-foreground">{p.brand}</p>
-        <p className="mt-1 text-sm font-bold text-primary">{formatPrice(p.priceMin, p.priceMax)}</p>
-        {p.variants?.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {p.variants.slice(0, 3).map((v: string) => (
-              <span key={v} className="rounded bg-secondary px-1.5 py-0.5 text-[9px]">{v}</span>
-            ))}
-          </div>
+      <button
+        onClick={() => setView({ name: 'product', id: p.id })}
+        className="block w-full text-left"
+      >
+        <div className="relative aspect-[4/3] overflow-hidden">
+          <img src={p.images?.[0]} alt={p.name} className="h-full w-full object-cover transition group-hover:scale-105" />
+          {p.featured && <span className="absolute left-2 top-2 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white">FEATURED</span>}
+          <span className="absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur" style={{ background: av.color + 'cc' }}>{av.label}</span>
+        </div>
+        <div className="p-2.5">
+          <p className="truncate text-xs font-semibold">{p.name}</p>
+          <p className="truncate text-[10px] text-muted-foreground">{p.brand}</p>
+          <p className="mt-1 text-sm font-bold text-primary">{formatPrice(p.priceMin, p.priceMax)}</p>
+          {p.variants?.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {p.variants.slice(0, 3).map((v: string) => (
+                <span key={v} className="rounded bg-secondary px-1.5 py-0.5 text-[9px]">{v}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          if (!inCompare && compareProductIds.length >= 3) { toast.error('Compare max 3 products'); return }
+          toggleCompareProduct(p.id)
+          toast.success(inCompare ? 'Removed from compare' : `Added to compare (${compareProductIds.length + 1}/3)`)
+        }}
+        className={cn(
+          'absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full backdrop-blur transition',
+          inCompare ? 'bg-primary text-primary-foreground' : 'bg-white/85 text-foreground opacity-0 group-hover:opacity-100 hover:bg-white'
         )}
-      </div>
-    </button>
+        aria-label="Compare product"
+        title="Add to compare"
+      >
+        <GitCompare className="h-3.5 w-3.5" />
+      </button>
+    </div>
   )
 }
 

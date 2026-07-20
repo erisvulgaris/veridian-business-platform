@@ -243,3 +243,43 @@ Unresolved / Next-phase priorities:
 - Business claim flow.
 - Price comparison across businesses for matching product categories.
 - Collections: share collection link, collaborative collections.
+
+---
+Task ID: 6 (cron review round 5)
+Agent: Cron webDevReview
+Task: QA the platform, build product comparison feature with price comparison.
+
+Work Log:
+- Reviewed worklog (Tasks 1-5). Platform had: 20 businesses, collections, RFQ, dashboard enquiry inbox, follow/helpful voting, map/list toggle, localStorage, "opens at" status, hours highlight.
+- QA via agent-browser: home, business profile, product detail all functional. No errors. Tested Follow, dashboard enquiry status, product navigation.
+
+New features added:
+- Product comparison feature (full):
+  - Store: `compareProductIds` array + `toggleCompareProduct` + `clearCompareProducts` methods, localStorage-persisted.
+  - `ProductCompareView` (`src/components/views/product-compare-view.tsx`): side-by-side table comparing up to 3 products across Price, Brand, Category, Availability, Variants, Supplier, and all specifications. Fetches each product by ID directly. Remove button per product, "Add product" placeholder slots, clear all.
+  - `ProductCompareTray` (`src/components/product-compare-tray.tsx`): floating bottom tray that appears when products are added to compare. Shows product thumbnails + names, slot placeholders, "Compare" button (disabled if <2 products), clear all. Animated slide-up with framer-motion.
+  - Compare toggle on ProductCard (business profile products tab): GitCompare icon button bottom-right of each card, appears on hover, turns primary when added.
+  - Compare button on ProductView: 3-column actions (Quote, Save, Compare) with active state.
+  - Wired into page.tsx view router (`compare-products` view).
+- Price comparison in "Similar products & prices" section (ProductView): related products now show price difference vs current product — green "−₹14" / "−25%" badge if cheaper, red "+₹27.5" / "+50%" if more expensive. Each card has Save + Compare quick actions. Supplier name shown.
+
+Verification:
+- agent-browser: opened Shakti business → Products tab → clicked Sona Masoori Rice → product detail shows Quote/Save/Compare buttons + "Similar products & prices" section with price diff badges (−25% for Atta, +50% for Besan). Clicked Compare → tray appeared. Added 2 more products via similar products Compare buttons → tray showed 3 products. Clicked Compare in tray → ProductCompareView opened showing all 3 products side-by-side with prices, specs, availability, supplier.
+- APIs: home 200, businesses 200, product 200 (with valid ID).
+- ESLint: clean.
+
+Stage Summary:
+- Platform now has: full product comparison (up to 3) with side-by-side table, floating compare tray, price comparison with diff badges, compare toggles on product cards and detail.
+- New artifacts: `src/components/views/product-compare-view.tsx`, `src/components/product-compare-tray.tsx`.
+- Modified: `src/lib/store.ts` (compareProductIds + methods), `src/app/page.tsx` (compare-products route + ProductCompareTray), `src/components/views/business-view.tsx` (ProductCard compare toggle), `src/components/views/product-view.tsx` (compare button + price comparison section).
+- All prior features intact; no regressions.
+
+Unresolved / Next-phase priorities:
+- Service comparison (currently only business + product compare).
+- SEO landing pages per category/city.
+- Business messaging / real-time chat.
+- Map: real tile option.
+- User authentication (NextAuth.js).
+- Business claim flow.
+- Collections: share collection link.
+- Add more rich data: business analytics charts, review trends.

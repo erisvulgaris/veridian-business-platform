@@ -9,6 +9,7 @@ interface PersistedState {
   savedProductIds: string[]
   followedBusinessIds: string[]
   compareIds: string[]
+  compareProductIds: string[]
   recentlyViewed: string[]
   collections: { id: string; name: string; businessIds: string[]; createdAt: number }[]
   activeCategories: string[]
@@ -46,6 +47,7 @@ export type View =
   | { name: 'saved' }
   | { name: 'collections' }
   | { name: 'compare'; ids: string[] }
+  | { name: 'compare-products'; ids: string[] }
 
 interface AppState {
   view: View
@@ -64,6 +66,7 @@ interface AppState {
   savedProductIds: string[]
   followedBusinessIds: string[]
   compareIds: string[]
+  compareProductIds: string[]
   recentlyViewed: string[]
   collections: { id: string; name: string; businessIds: string[]; createdAt: number }[]
   activeCollectionId: string | null
@@ -85,6 +88,8 @@ interface AppState {
   toggleFollow: (id: string) => void
   toggleCompare: (id: string) => void
   clearCompare: () => void
+  toggleCompareProduct: (id: string) => void
+  clearCompareProducts: () => void
   addRecentlyViewed: (id: string) => void
   clearRecentlyViewed: () => void
   createCollection: (name: string) => string
@@ -114,6 +119,7 @@ export const useAppStore = create<AppState>((set, get) => {
   savedProductIds: persisted.savedProductIds ?? [],
   followedBusinessIds: persisted.followedBusinessIds ?? [],
   compareIds: persisted.compareIds ?? [],
+  compareProductIds: persisted.compareProductIds ?? [],
   recentlyViewed: persisted.recentlyViewed ?? [],
   collections: persisted.collections ?? [],
   activeCollectionId: null,
@@ -196,6 +202,17 @@ export const useAppStore = create<AppState>((set, get) => {
       return { compareIds }
     }),
   clearCompare: () => { savePersisted({ ...get(), compareIds: [] } as PersistedState); set({ compareIds: [] }) },
+  toggleCompareProduct: (id) =>
+    set((s) => {
+      const compareProductIds = s.compareProductIds.includes(id)
+        ? s.compareProductIds.filter((x) => x !== id)
+        : s.compareProductIds.length >= 3
+          ? s.compareProductIds
+          : [...s.compareProductIds, id]
+      savePersisted({ ...get(), compareProductIds } as PersistedState)
+      return { compareProductIds }
+    }),
+  clearCompareProducts: () => { savePersisted({ ...get(), compareProductIds: [] } as PersistedState); set({ compareProductIds: [] }) },
   addRecentlyViewed: (id) =>
     set((s) => {
       const recentlyViewed = [id, ...s.recentlyViewed.filter((x) => x !== id)].slice(0, 12)

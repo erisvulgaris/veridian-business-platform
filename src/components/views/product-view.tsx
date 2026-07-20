@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import useSWR from 'swr'
-import { ArrowLeft, Package, Store, Tag, FileText, Wrench, ChevronRight, ShoppingCart, Share2 } from 'lucide-react'
+import { ArrowLeft, Package, Store, Tag, FileText, Wrench, ChevronRight, ShoppingCart, Share2, GitCompare } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import type { Product, Business } from '@/lib/types'
 import { formatPrice } from '@/lib/types'
@@ -25,7 +25,7 @@ const AVAILABILITY: Record<string, { label: string; color: string }> = {
 
 export function ProductView({ id }: { id: string }) {
   const { data, isLoading } = useSWR<{ product: Product & { business: Business }; related: (Product & { business: Business })[] }>(`/api/products/${id}`, fetcher)
-  const { setView, toggleSaveProduct, savedProductIds } = useAppStore()
+  const { setView, toggleSaveProduct, savedProductIds, toggleCompareProduct, compareProductIds } = useAppStore()
   const p = data?.product
   const [activeImage, setActiveImage] = React.useState(0)
   const [rfqOpen, setRfqOpen] = React.useState(false)
@@ -109,12 +109,23 @@ export function ProductView({ id }: { id: string }) {
           <p className="mt-3 text-sm leading-relaxed text-foreground/90">{p.description}</p>
 
           {/* Actions */}
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="mt-4 grid grid-cols-3 gap-2">
             <Button className="h-10 gap-1.5" onClick={() => setRfqOpen(true)}>
-              <ShoppingCart className="h-4 w-4" /> Request quote
+              <ShoppingCart className="h-4 w-4" /> <span className="hidden sm:inline">Quote</span>
             </Button>
             <Button variant="outline" className={cn('h-10 gap-1.5', saved && 'border-primary text-primary')} onClick={() => { toggleSaveProduct(p.id); toast.success(saved ? 'Removed' : 'Saved') }}>
               {saved ? 'Saved' : 'Save'} <Tag className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className={cn('h-10 gap-1.5', compareProductIds.includes(p.id) && 'border-primary text-primary bg-primary/5')}
+              onClick={() => {
+                if (!compareProductIds.includes(p.id) && compareProductIds.length >= 3) { toast.error('Compare max 3 products'); return }
+                toggleCompareProduct(p.id)
+                toast.success(compareProductIds.includes(p.id) ? 'Removed from compare' : `Added to compare (${compareProductIds.length + 1}/3)`)
+              }}
+            >
+              <GitCompare className="h-4 w-4" /> {compareProductIds.includes(p.id) ? 'Added' : 'Compare'}
             </Button>
           </div>
 
@@ -162,29 +173,74 @@ export function ProductView({ id }: { id: string }) {
         </section>
       )}
 
-      {/* Related */}
+      {/* Related + price comparison */}
       {data?.related && data.related.length > 0 && (
         <section className="mt-8">
-          <div className="mb-3 flex items-center gap-2">
-            <Package className="h-4 w-4 text-primary" />
-            <h2 className="text-lg font-bold tracking-tight">Related products</h2>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-primary" />
+              <h2 className="text-lg font-bold tracking-tight">Similar products & prices</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">{data.related.length} alternatives</span>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {data.related.slice(0, 4).map((rp) => (
-              <button
-                key={rp.id}
-                onClick={() => setView({ name: 'product', id: rp.id })}
-                className="group overflow-hidden rounded-xl border border-border bg-card text-left transition hover:border-primary/40 hover:shadow-md"
-              >
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img src={rp.images?.[0]} alt={rp.name} className="h-full w-full object-cover transition group-hover:scale-105" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {data.related.slice(0, 6).map((rp) => {
+              const savedRp = savedProductIds.includes(rp.id)
+              const inCompare = compareProductIds.includes(rp.id)
+              // Price comparison vs current product
+              const rpAvg = (rp.priceMin + (rp.priceMax || rp.priceMin)) / 2
+              const curAvg = (p.priceMin + (p.priceMax || p.priceMin)) / 2
+              const diff = rpAvg - curAvg
+              const diffPct = curAvg > 0 ? Math.round((diff / curAvg) * 100) : 0
+              return (
+                <div key={rp.id} className="group overflow-hidden rounded-xl border border-border bg-card transition hover:border-primary/40 hover:shadow-md">
+                  <button onClick={() => setView({ name: 'product', id: rp.id })} className="block w-full text-left">
+                    <div className="relative aspect-[4/3] overflow-hidden">
+                      <img src={rp.images?.[0]} alt={rp.name} className="h-full w-full object-cover transition group-hover:scale-105" />
+                      {diff !== 0 && (
+                        <span className={cn('absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white', diff > 0 ? 'bg-rose-500' : 'bg-emerald-500')}>
+                          {diff > 0 ? '+' : ''}{diffPct}%
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-2.5">
+                      <p className="truncate text-xs font-semibold">{rp.name}</p>
+                      <p className="truncate text-[10px] text-muted-foreground">by {rp.business?.name}</p>
+                      <div className="mt-1 flex items-center justify-between">
+                        <p className="text-sm font-bold text-primary">{formatPrice(rp.priceMin, rp.priceMax)}</p>
+                        {diff !== 0 && (
+                          <span className={cn('text-[10px] font-medium', diff > 0 ? 'text-rose-500' : 'text-emerald-600')}>
+                            {diff > 0 ? '+' : '−'}{formatPrice(Math.abs(diff), 0)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                  <div className="flex items-center gap-1 border-t border-border px-2 py-1.5">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 flex-1 text-[10px]"
+                      onClick={() => { toggleSaveProduct(rp.id); toast.success(savedRp ? 'Removed' : 'Saved') }}
+                    >
+                      <Tag className="h-3 w-3" /> {savedRp ? 'Saved' : 'Save'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={cn('h-7 flex-1 text-[10px]', inCompare && 'text-primary')}
+                      onClick={() => {
+                        if (!inCompare && compareProductIds.length >= 3) { toast.error('Compare max 3'); return }
+                        toggleCompareProduct(rp.id)
+                        toast.success(inCompare ? 'Removed' : 'Added to compare')
+                      }}
+                    >
+                      <GitCompare className="h-3 w-3" /> {inCompare ? 'Added' : 'Compare'}
+                    </Button>
+                  </div>
                 </div>
-                <div className="p-2">
-                  <p className="truncate text-xs font-semibold">{rp.name}</p>
-                  <p className="text-sm font-bold text-primary">{formatPrice(rp.priceMin, rp.priceMax)}</p>
-                </div>
-              </button>
-            ))}
+              )
+            })}
           </div>
         </section>
       )}
