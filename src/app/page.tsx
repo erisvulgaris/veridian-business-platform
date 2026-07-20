@@ -14,6 +14,7 @@ import { SearchView } from '@/components/views/search-view'
 import { CategoryView } from '@/components/views/category-view'
 import { DashboardView } from '@/components/views/dashboard-view'
 import { SavedView } from '@/components/views/saved-view'
+import { CollectionsView } from '@/components/views/collections-view'
 import { CompareView } from '@/components/views/compare-view'
 
 export default function Home() {
@@ -56,6 +57,7 @@ function viewKey(view: ReturnType<typeof useAppStore.getState>['view']): string 
     case 'service': return `svc:${view.id}`
     case 'dashboard': return 'dashboard'
     case 'saved': return 'saved'
+    case 'collections': return 'collections'
     case 'compare': return `compare:${view.ids.join(',')}`
     default: return 'home'
   }
@@ -71,6 +73,7 @@ function renderView(view: ReturnType<typeof useAppStore.getState>['view'], compa
     case 'service': return <ServiceView id={view.id} />
     case 'dashboard': return <DashboardView />
     case 'saved': return <SavedView />
+    case 'collections': return <CollectionsView />
     case 'compare': return <CompareView ids={view.ids} />
     default: return <HomeView />
   }

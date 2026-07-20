@@ -41,6 +41,9 @@ export function HomeView() {
   const verified = businesses
     .filter((b) => (b.verified === 'premium' || b.verified === 'enterprise') && !featuredIds.has(b.id) && !trendingIds.has(b.id))
     .slice(0, 8)
+  const recentlyVerified = businesses.filter((b) => b.recentlyVerified).slice(0, 8)
+  // Newest by founded year (most recent first)
+  const newest = [...businesses].sort((a, b) => b.foundedYear - a.foundedYear).slice(0, 8)
 
   // recently viewed (resolved from store IDs against fetched businesses)
   const recent = recentlyViewed
@@ -135,6 +138,24 @@ export function HomeView() {
           businesses={verified}
           layout="list"
         />
+        {recentlyVerified.length > 0 && (
+          <DiscoverySection
+            title="Recently verified"
+            subtitle="Freshly verified businesses you can trust"
+            icon={<BadgeCheck className="h-4 w-4 text-emerald-500" />}
+            businesses={recentlyVerified}
+            layout="grid"
+          />
+        )}
+        {newest.length > 0 && (
+          <DiscoverySection
+            title="New on Veridian"
+            subtitle="The newest businesses to join the directory"
+            icon={<Sparkles className="h-4 w-4 text-primary" />}
+            businesses={newest}
+            layout="grid"
+          />
+        )}
 
         <VerificationTiers />
         <ERPTeaser />

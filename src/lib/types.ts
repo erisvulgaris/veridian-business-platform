@@ -229,3 +229,58 @@ function parseTime(s: string): number | null {
   if (!m) return null
   return parseInt(m[1], 10) * 60 + parseInt(m[2], 10)
 }
+
+// Returns a human-readable status: "Open now", "Opens at 09:00", "Closed · opens Mon"
+export function getOpenStatus(hours: BusinessHours, now: Date = new Date()): { label: string; isOpen: boolean; nextTime?: string } {
+  if (!hours?.days?.length) return { label: 'Hours n/a', isOpen: false }
+  const day = now.getDay()
+  const time = now.getHours() * 60 + now.getMinutes()
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const today = dayNames[day]
+
+  // Check if currently open
+  for (const d of hours.days) {
+    if (d.open === 'Closed' || d.close === 'Closed') continue
+    if (d.day === today || matchesRange(d.day, day)) {
+      if (isInWindow(d.open, d.close, time)) {
+        return { label: 'Open now', isOpen: true, nextTime: d.close }
+      }
+    }
+  }
+
+  // Find next opening time today
+  for (const d of hours.days) {
+    if (d.open === 'Closed' || d.close === 'Closed') continue
+    if (d.day === today || matchesRange(d.day, day)) {
+      const o = parseTime(d.open)
+      if (o !== null && o > time) {
+        return { label: `Opens at ${d.open}`, isOpen: false, nextTime: d.open }
+      }
+    }
+  }
+
+  // Find next opening day (up to 7 days ahead)
+  for (let i = 1; i <= 7; i++) {
+    const checkDay = (day + i) % 7
+    const checkDayName = dayNames[checkDay]
+    for (const d of hours.days) {
+      if (d.open === 'Closed' || d.close === 'Closed') continue
+      if (d.day === checkDayName || matchesRange(d.day, checkDay)) {
+        const dayLabel = i === 1 ? 'tomorrow' : checkDayName
+        return { label: `Closed · opens ${dayLabel} ${d.open}`, isOpen: false, nextTime: d.open }
+      }
+    }
+  }
+
+  return { label: 'Closed', isOpen: false }
+}
+
+function matchesRange(dayRange: string, jsDay: number): boolean {
+  if (!dayRange.includes('–') && !dayRange.includes('-')) return false
+  const [start, end] = dayRange.split(/[–-]/).map((s) => s.trim())
+  const order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const si = order.indexOf(start)
+  const ei = order.indexOf(end)
+  if (si === -1 || ei === -1) return false
+  return si <= ei ? (jsDay >= si && jsDay <= ei) : (jsDay >= si || jsDay <= ei)
+}

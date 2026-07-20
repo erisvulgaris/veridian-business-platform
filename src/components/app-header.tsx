@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Sparkles, Sun, Moon, Bookmark, LayoutGrid, ArrowLeft, Home } from 'lucide-react'
+import { Sparkles, Sun, Moon, Bookmark, LayoutGrid, ArrowLeft, Home, FolderOpen } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useAppStore } from '@/lib/store'
 import { SearchBar } from './search-bar'
@@ -60,6 +60,15 @@ export function AppHeader() {
           >
             <LayoutGrid className="h-4 w-4" />
             <span className="text-xs font-medium">Dashboard</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden md:inline-flex h-9 gap-1.5"
+            onClick={() => setView({ name: 'collections' })}
+          >
+            <FolderOpen className="h-4 w-4" />
+            <span className="text-xs font-medium">Collections</span>
           </Button>
           <Button
             variant="ghost"

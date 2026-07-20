@@ -10,6 +10,7 @@ interface PersistedState {
   followedBusinessIds: string[]
   compareIds: string[]
   recentlyViewed: string[]
+  collections: { id: string; name: string; businessIds: string[]; createdAt: number }[]
   activeCategories: string[]
   filters: { openNow: boolean; verifiedOnly: boolean; minRating: number }
 }
@@ -43,6 +44,7 @@ export type View =
   | { name: 'service'; id: string }
   | { name: 'dashboard' }
   | { name: 'saved' }
+  | { name: 'collections' }
   | { name: 'compare'; ids: string[] }
 
 interface AppState {
@@ -63,6 +65,8 @@ interface AppState {
   followedBusinessIds: string[]
   compareIds: string[]
   recentlyViewed: string[]
+  collections: { id: string; name: string; businessIds: string[]; createdAt: number }[]
+  activeCollectionId: string | null
   aiPanelOpen: boolean
   searchQuery: string
 
@@ -83,6 +87,12 @@ interface AppState {
   clearCompare: () => void
   addRecentlyViewed: (id: string) => void
   clearRecentlyViewed: () => void
+  createCollection: (name: string) => string
+  deleteCollection: (id: string) => void
+  renameCollection: (id: string, name: string) => void
+  addToCollection: (collectionId: string, businessId: string) => void
+  removeFromCollection: (collectionId: string, businessId: string) => void
+  setActiveCollection: (id: string | null) => void
   setAiPanel: (open: boolean) => void
   setSearchQuery: (q: string) => void
 }
@@ -105,6 +115,8 @@ export const useAppStore = create<AppState>((set, get) => {
   followedBusinessIds: persisted.followedBusinessIds ?? [],
   compareIds: persisted.compareIds ?? [],
   recentlyViewed: persisted.recentlyViewed ?? [],
+  collections: persisted.collections ?? [],
+  activeCollectionId: null,
   aiPanelOpen: false,
   searchQuery: '',
 
@@ -191,6 +203,43 @@ export const useAppStore = create<AppState>((set, get) => {
       return { recentlyViewed }
     }),
   clearRecentlyViewed: () => { savePersisted({ ...get(), recentlyViewed: [] } as PersistedState); set({ recentlyViewed: [] }) },
+  createCollection: (name) => {
+    const id = `col_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    const collection = { id, name: name.trim() || 'Untitled collection', businessIds: [], createdAt: Date.now() }
+    const collections = [...get().collections, collection]
+    savePersisted({ ...get(), collections } as PersistedState)
+    set({ collections, activeCollectionId: id })
+    return id
+  },
+  deleteCollection: (id) => {
+    const collections = get().collections.filter((c) => c.id !== id)
+    savePersisted({ ...get(), collections } as PersistedState)
+    set({ collections, activeCollectionId: get().activeCollectionId === id ? null : get().activeCollectionId })
+  },
+  renameCollection: (id, name) => {
+    const collections = get().collections.map((c) => c.id === id ? { ...c, name: name.trim() || c.name } : c)
+    savePersisted({ ...get(), collections } as PersistedState)
+    set({ collections })
+  },
+  addToCollection: (collectionId, businessId) => {
+    const collections = get().collections.map((c) =>
+      c.id === collectionId && !c.businessIds.includes(businessId)
+        ? { ...c, businessIds: [...c.businessIds, businessId] }
+        : c
+    )
+    savePersisted({ ...get(), collections } as PersistedState)
+    set({ collections })
+  },
+  removeFromCollection: (collectionId, businessId) => {
+    const collections = get().collections.map((c) =>
+      c.id === collectionId
+        ? { ...c, businessIds: c.businessIds.filter((b) => b !== businessId) }
+        : c
+    )
+    savePersisted({ ...get(), collections } as PersistedState)
+    set({ collections })
+  },
+  setActiveCollection: (id) => set({ activeCollectionId: id }),
   setAiPanel: (open) => set({ aiPanelOpen: open }),
   setSearchQuery: (q) => set({ searchQuery: q }),
 }})

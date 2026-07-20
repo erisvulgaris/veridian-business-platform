@@ -4,7 +4,7 @@ import * as React from 'react'
 import { motion } from 'framer-motion'
 import { MapPin, Clock, Bookmark, BookmarkCheck, Eye, Package, Wrench, Flame } from 'lucide-react'
 import type { Business } from '@/lib/types'
-import { formatNumber, timeAgo, computeIsOpen } from '@/lib/types'
+import { formatNumber, timeAgo, computeIsOpen, getOpenStatus } from '@/lib/types'
 import { VerificationBadge } from './verification-badge'
 import { RatingStars } from './rating-stars'
 import { useAppStore } from '@/lib/store'
@@ -23,10 +23,11 @@ export function BusinessCard({
 }) {
   const { setView, toggleSaveBusiness, savedBusinessIds, selectBusiness, hoverBusiness, addRecentlyViewed } = useAppStore()
   const saved = savedBusinessIds.includes(b.id)
-  // Live "open now" computed from hours + current time (falls back to stored flag)
-  const liveOpen = React.useMemo(() => {
-    try { return computeIsOpen(b.hours) } catch { return b.isOpen }
+  // Live "open now" + "opens at" computed from hours + current time
+  const openStatus = React.useMemo(() => {
+    try { return getOpenStatus(b.hours) } catch { return { label: b.isOpen ? 'Open now' : 'Closed', isOpen: b.isOpen } }
   }, [b.hours, b.isOpen])
+  const liveOpen = openStatus.isOpen
 
   const open = () => {
     selectBusiness(b.id)
@@ -154,7 +155,7 @@ export function BusinessCard({
           <RatingStars rating={b.rating} size="xs" count={b.reviewCount} />
           <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-medium', liveOpen ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400')}>
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: liveOpen ? '#10b981' : '#9ca3af' }} />
-            {liveOpen ? 'Open now' : 'Closed'}
+            {openStatus.label}
           </span>
         </div>
         <div className="mt-auto flex items-center gap-2 pt-1 text-[10px] text-muted-foreground">

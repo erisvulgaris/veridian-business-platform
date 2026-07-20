@@ -198,3 +198,48 @@ Unresolved / Next-phase priorities:
 - Add user authentication (NextAuth.js available but not wired).
 - Add business claim flow.
 - Add more rich data: business hours "opens at" next-open time, price comparison across businesses.
+
+---
+Task ID: 5 (cron review round 4)
+Agent: Cron webDevReview
+Task: QA the platform, add collections feature, "opens at" status, discovery sections, hours polish.
+
+Work Log:
+- Reviewed worklog (Tasks 1-4). Platform had: 20 businesses, RFQ flow, dashboard enquiry inbox, follow/helpful voting, map/list toggle, localStorage persistence, live open-now.
+- QA via agent-browser: home, business profile, dashboard, search all functional. VLM suggested: spacing, micro-interactions, empty states, visual density. Tested Follow button (works), dashboard enquiry status changes (New→Read works), search (returns relevant results).
+
+Fixes applied:
+- Fixed duplicate function error in types.ts: `isInWindow` and `matchesRange` were duplicated when `getOpenStatus` was added. Removed duplicates, kept single definitions. Server recovered from 500 → 200.
+
+New features added:
+- "Opens at" next-open time: `getOpenStatus(hours)` helper returns rich status — "Open now" (with "until HH:MM"), "Opens at HH:MM", "Closed · opens Mon HH:MM", or "Closed". BusinessCard list layout now shows this richer label instead of just "Open/Closed". Business profile header uses new `OpenStatusBadge` component showing status + closing time.
+- Collections feature (full): 
+  - Store: `collections` array (`{id, name, businessIds, createdAt}`), `activeCollectionId`, and methods `createCollection`, `deleteCollection`, `renameCollection`, `addToCollection`, `removeFromCollection`, `setActiveCollection` — all persisted to localStorage.
+  - `CollectionsView` (`src/components/views/collections-view.tsx`): grid of collection cards with create/rename/delete, business counts, "Open collection" button. Empty state with CTA.
+  - `CollectionPicker` dropdown on business profile: "List" button next to Save, opens dropdown showing all collections with checkmarks for ones containing this business, toggle add/remove, "New collection" quick-create, "Manage collections" link.
+  - Header nav: "Collections" button added (FolderOpen icon).
+  - Wired into page.tsx view router.
+- Business hours polish: the weekly schedule on the business profile now highlights today's row (primary tint + ring + "Today" badge), shows the open status inline at the top, and color-codes today's hours. Added `matchesToday()` helper.
+- Discovery sections expanded: added "Recently verified" (emerald BadgeCheck icon, shows recentlyVerified businesses) and "New on Veridian" (primary Sparkles icon, sorted by foundedYear descending) sections to home.
+
+Verification:
+- agent-browser: home renders with all discovery sections (Trending, Featured, Premium, Recently verified, New on Veridian, Trust verified, ERP teaser). Business profile shows 6 action buttons (Call, Get Quote, Save, List, Follow, Compare). CollectionPicker dropdown works — created "Test Collection", added Aarogya hospital to it (count 0→1). "Opens at" status shows on cards. Hours section highlights today.
+- APIs: home 200, businesses 200, enquiries 200.
+- ESLint: clean.
+- Fixed 500 error (duplicate function) → 200.
+
+Stage Summary:
+- Platform now has: collections feature (create/manage/add businesses), "opens at" next-open time, highlighted today's hours, 2 new discovery sections, richer open status badges.
+- New artifacts: `src/components/views/collections-view.tsx`.
+- Modified: `src/lib/types.ts` (getOpenStatus + matchesRange), `src/lib/store.ts` (collections state + methods), `src/app/page.tsx` (collections route), `src/components/app-header.tsx` (Collections nav), `src/components/business-card.tsx` (open status label), `src/components/views/business-view.tsx` (OpenStatusBadge, CollectionPicker, hours highlight, 6-col actions), `src/components/views/home-view.tsx` (2 new discovery sections).
+- All prior features intact; no regressions.
+
+Unresolved / Next-phase priorities:
+- Product/service comparison (currently only business compare).
+- SEO landing pages per category/city.
+- Business messaging / real-time chat.
+- Map: real tile option.
+- User authentication (NextAuth.js).
+- Business claim flow.
+- Price comparison across businesses for matching product categories.
+- Collections: share collection link, collaborative collections.

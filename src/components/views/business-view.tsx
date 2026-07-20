@@ -9,11 +9,11 @@ import {
   Star, ThumbsUp, Camera, ArrowRight, Navigation, FileText, Megaphone, Tag,
   Facebook, Instagram, Linkedin, Twitter, GitCompare, CheckCircle2, Loader2,
   Flame, X as XIcon, ChevronLeft, ChevronRight as ChevronRightIcon,
-  ZoomIn, Send, Bell, BellRing,
+  ZoomIn, Send, Bell, BellRing, FolderPlus, FolderCheck, Folder, Plus,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import type { Business, Review } from '@/lib/types'
-import { formatPrice, formatNumber, timeAgo } from '@/lib/types'
+import { formatPrice, formatNumber, timeAgo, getOpenStatus } from '@/lib/types'
 import { VerificationBadge } from '@/components/verification-badge'
 import { RatingStars } from '@/components/rating-stars'
 import { BusinessCard } from '@/components/business-card'
@@ -144,10 +144,7 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <RatingStars rating={b.rating} size="sm" count={b.reviewCount} />
               <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{b.area}, {b.city}</span>
-              <span className={cn('inline-flex items-center gap-1 font-medium', b.isOpen ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400')}>
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: b.isOpen ? '#10b981' : '#9ca3af' }} />
-                {b.isOpen ? 'Open now' : 'Closed'}
-              </span>
+              <OpenStatusBadge hours={b.hours} fallbackIsOpen={b.isOpen} />
               <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />Since {b.foundedYear}</span>
               <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{b.teamSize} team</span>
             </div>
@@ -160,7 +157,7 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
         </div>
 
         {/* Action buttons */}
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-6">
           <Button size="sm" className="h-9 gap-1.5" onClick={() => window.open(`tel:${b.phone}`)}>
             <Phone className="h-3.5 w-3.5" /> Call
           </Button>
@@ -176,6 +173,7 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
             {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
             {saved ? 'Saved' : 'Save'}
           </Button>
+          <CollectionPicker businessId={b.id} />
           <Button
             size="sm"
             variant="outline"
@@ -305,15 +303,24 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
                 {/* Hours */}
                 <Separator className="my-3" />
                 <div className="space-y-1.5">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Business hours</p>
-                  {b.hours.days.map((d) => (
-                    <div key={d.day} className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">{d.day}</span>
-                      <span className={cn('font-medium', d.open === 'Closed' ? 'text-zinc-400' : 'text-foreground')}>
-                        {d.open === 'Closed' ? 'Closed' : `${d.open} – ${d.close}`}
-                      </span>
-                    </div>
-                  ))}
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Business hours</p>
+                    <OpenStatusBadge hours={b.hours} fallbackIsOpen={b.isOpen} />
+                  </div>
+                  {b.hours.days.map((d) => {
+                    const isToday = matchesToday(d.day)
+                    return (
+                      <div key={d.day} className={cn('flex items-center justify-between rounded-lg px-2 py-1 text-xs', isToday && 'bg-primary/5 ring-1 ring-primary/20')}>
+                        <span className={cn(isToday ? 'font-semibold text-primary' : 'text-muted-foreground')}>
+                          {d.day}
+                          {isToday && <span className="ml-1 text-[9px] uppercase">Today</span>}
+                        </span>
+                        <span className={cn('font-medium', d.open === 'Closed' ? 'text-zinc-400' : isToday ? 'text-primary' : 'text-foreground')}>
+                          {d.open === 'Closed' ? 'Closed' : `${d.open} – ${d.close}`}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               </Card>
 
@@ -927,5 +934,106 @@ function HelpfulButton({ reviewId, count }: { reviewId: string; count: number })
     >
       <ThumbsUp className={cn('h-3 w-3', voted && 'fill-primary')} /> Helpful ({helpful})
     </button>
+  )
+}
+
+function OpenStatusBadge({ hours, fallbackIsOpen }: { hours: Business['hours']; fallbackIsOpen: boolean }) {
+  const status = React.useMemo(() => {
+    try { return getOpenStatus(hours) } catch { return { label: fallbackIsOpen ? 'Open now' : 'Closed', isOpen: fallbackIsOpen } }
+  }, [hours, fallbackIsOpen])
+  const open = status.isOpen
+  return (
+    <span className={cn('inline-flex items-center gap-1 font-medium', open ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400')}>
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: open ? '#10b981' : '#9ca3af' }} />
+      {status.label}
+      {open && status.nextTime && <span className="text-muted-foreground">· until {status.nextTime}</span>}
+    </span>
+  )
+}
+
+function matchesToday(dayRange: string): boolean {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const today = dayNames[new Date().getDay()]
+  if (dayRange === today) return true
+  if (dayRange.includes('–') || dayRange.includes('-')) {
+    const [start, end] = dayRange.split(/[–-]/).map((s) => s.trim())
+    const order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const si = order.indexOf(start)
+    const ei = order.indexOf(end)
+    const ti = order.indexOf(today)
+    if (si !== -1 && ei !== -1 && ti !== -1) {
+      return si <= ei ? (ti >= si && ti <= ei) : (ti >= si || ti <= ei)
+    }
+  }
+  return false
+}
+
+function CollectionPicker({ businessId }: { businessId: string }) {
+  const { collections, addToCollection, removeFromCollection, createCollection, setView } = useAppStore()
+  const [open, setOpen] = React.useState(false)
+  const inAnyCollection = collections.some((c) => c.businessIds.includes(businessId))
+
+  return (
+    <div className="relative">
+      <Button
+        size="sm"
+        variant="outline"
+        className={cn('h-9 gap-1.5', inAnyCollection && 'border-primary text-primary bg-primary/5')}
+        onClick={() => setOpen((s) => !s)}
+      >
+        {inAnyCollection ? <FolderCheck className="h-3.5 w-3.5" /> : <FolderPlus className="h-3.5 w-3.5" />}
+        <span className="hidden sm:inline">{inAnyCollection ? 'In list' : 'List'}</span>
+      </Button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full z-40 mt-1 w-64 overflow-hidden rounded-xl border border-border bg-popover shadow-xl animate-scale-in">
+            <div className="border-b border-border px-3 py-2">
+              <p className="text-xs font-semibold">Add to collection</p>
+            </div>
+            <div className="max-h-64 overflow-y-auto scrollbar-thin p-1">
+              {collections.length === 0 ? (
+                <div className="px-2 py-3 text-center">
+                  <Folder className="mx-auto h-6 w-6 text-muted-foreground/40" />
+                  <p className="mt-1 text-[11px] text-muted-foreground">No collections yet</p>
+                </div>
+              ) : (
+                collections.map((c) => {
+                  const inCol = c.businessIds.includes(businessId)
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        if (inCol) { removeFromCollection(c.id, businessId); toast.success(`Removed from ${c.name}`) }
+                        else { addToCollection(c.id, businessId); toast.success(`Added to ${c.name}`) }
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition hover:bg-accent"
+                    >
+                      {inCol ? <FolderCheck className="h-3.5 w-3.5 text-primary" /> : <Folder className="h-3.5 w-3.5 text-muted-foreground" />}
+                      <span className="flex-1 truncate">{c.name}</span>
+                      <span className="text-[10px] text-muted-foreground">{c.businessIds.length}</span>
+                    </button>
+                  )
+                })
+              )}
+            </div>
+            <div className="border-t border-border p-1.5">
+              <button
+                onClick={() => { const id = createCollection('Untitled collection'); addToCollection(id, businessId); toast.success('Added to new collection'); setOpen(false) }}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-medium text-primary transition hover:bg-primary/5"
+              >
+                <Plus className="h-3.5 w-3.5" /> New collection
+              </button>
+              <button
+                onClick={() => { setOpen(false); setView({ name: 'collections' }) }}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-muted-foreground transition hover:bg-accent"
+              >
+                <Folder className="h-3.5 w-3.5" /> Manage collections
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   )
 }
