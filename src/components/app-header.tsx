@@ -1,9 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { Sparkles, Sun, Moon, Bookmark, LayoutGrid, ArrowLeft, Home, FolderOpen } from 'lucide-react'
+import { Sparkles, Sun, Moon, Bookmark, LayoutGrid, ArrowLeft, Home, FolderOpen, Boxes, Shield, User as UserIcon, LogOut } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useAppStore } from '@/lib/store'
+import { useAuth } from '@/lib/auth-context'
+import { openAuthModal } from '@/components/auth-modal'
 import { SearchBar } from './search-bar'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -11,8 +13,11 @@ import { cn } from '@/lib/utils'
 export function AppHeader() {
   const { theme, setTheme } = useTheme()
   const { view, setView, goBack, savedBusinessIds, setAiPanel, history } = useAppStore()
+  const { user, logout } = useAuth()
   const [mounted, setMounted] = React.useState(false)
   React.useEffect(() => setMounted(true), [])
+
+  const isAdmin = user && ['super_admin', 'admin'].includes(user.role)
 
   const canGoBack = history.length > 0
   const isHome = view.name === 'home'
@@ -65,6 +70,26 @@ export function AppHeader() {
             variant="ghost"
             size="sm"
             className="hidden md:inline-flex h-9 gap-1.5"
+            onClick={() => setView({ name: 'erp' })}
+          >
+            <Boxes className="h-4 w-4" />
+            <span className="text-xs font-medium">Free ERP</span>
+          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden md:inline-flex h-9 gap-1.5"
+              onClick={() => setView({ name: 'admin' })}
+            >
+              <Shield className="h-4 w-4" />
+              <span className="text-xs font-medium">Admin</span>
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden md:inline-flex h-9 gap-1.5"
             onClick={() => setView({ name: 'collections' })}
           >
             <FolderOpen className="h-4 w-4" />
@@ -101,6 +126,27 @@ export function AppHeader() {
             <Sparkles className="h-4 w-4" />
             <span className="hidden sm:inline text-xs font-semibold">Ask AI</span>
           </Button>
+          {mounted && user ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 gap-1.5"
+              onClick={async () => { await logout(); setView({ name: 'home' }) }}
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs font-medium">Logout</span>
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-1.5"
+              onClick={() => openAuthModal()}
+            >
+              <UserIcon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs font-medium">Sign in</span>
+            </Button>
+          )}
           {mounted && (
             <Button
               variant="ghost"

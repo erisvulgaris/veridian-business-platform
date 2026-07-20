@@ -1,4 +1,5 @@
-// Verified Business Discovery Platform — Prisma schema
+// Veridian — Business Discovery Platform + Free ERP + Admin Panels
+// Prisma schema
 
 generator client {
   provider = "prisma-client-js"
@@ -7,6 +8,28 @@ generator client {
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("customer") // super_admin | admin | moderator | owner | staff | customer
+  businessId   String?  // for owner/staff — links to their business
+  permissions  String   @default("[]") // JSON array of granular permissions
+  avatar       String?
+  active       Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  adminActions AdminAction[]
+  orders       Order[]      @relation("OrderUser")
+  invoices     Invoice[]    @relation("InvoiceUser")
+  customers    Customer[]
+  expenses     Expense[]
+  staffMembers Staff[]
 }
 
 model Business {
@@ -53,6 +76,10 @@ model Business {
   promotion       String?  // JSON { title, description, expires }
   announcement    String?  // JSON { title, body, date }
   brandColor      String   @default("#0f766e")
+  // Admin fields
+  status          String   @default("active") // active | pending | suspended | rejected
+  claimStatus     String   @default("unclaimed") // unclaimed | claimed | claim_pending
+  ownerId         String?  // User who owns this business
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -61,6 +88,13 @@ model Business {
   reviews         Review[]
   enquiries       Enquiry[]
   messages        Message[]
+  inventory       InventoryItem[]
+  orders          Order[]
+  invoices        Invoice[]
+  customers       Customer[]
+  expenses        Expense[]
+  staff           Staff[]
+  subscriptions   Subscription[]
 }
 
 model Product {
@@ -76,14 +110,21 @@ model Product {
   priceMin      Int
   priceMax      Int
   currency      String   @default("INR")
+  cost          Int      @default(0) // cost price for ERP
+  sku           String?
   variants      String   // JSON array
   specifications String  // JSON array [{label, value}]
-  availability  String   @default("in_stock") // in_stock | low_stock | preorder | out_of_stock
+  availability  String   @default("in_stock") // in_stock | low_stock | preorder | out_of_stock | made_to_order
+  stockQty      Int      @default(0) // actual stock for ERP
+  reorderLevel  Int      @default(5) // low stock alert threshold
   documents     String   // JSON array
   faqs          String   // JSON array
   featured      Boolean  @default(false)
   viewCount     Int      @default(0)
   createdAt     DateTime @default(now())
+
+  inventory     InventoryItem[]
+  orderItems    OrderItem[]
 
   @@index([businessId])
 }
@@ -121,6 +162,9 @@ model Review {
   verified      Boolean  @default(false)
   helpful       Int      @default(0)
   businessReply String?
+  // Moderation
+  status        String   @default("published") // published | pending | flagged | removed
+  flaggedReason String?
   createdAt     DateTime @default(now())
 
   @@index([businessId])
@@ -151,7 +195,7 @@ model Message {
   id          String   @id @default(cuid())
   businessId  String
   business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  threadId    String   // groups messages between a customer and a business
+  threadId    String
   senderName  String
   senderEmail String
   senderRole  String   // customer | business
@@ -170,4 +214,178 @@ model Category {
   icon  String
   color String
   count Int    @default(0)
+}
+
+// === ERP Models ===
+
+model InventoryItem {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku         String?
+  stockQty    Int      @default(0)
+  reorderLevel Int     @default(5)
+  location    String?
+  notes       String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@index([businessId])
+  @@index([productId])
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId        String?
+  user          User?    @relation("OrderUser", fields: [userId], references: [id])
+  orderNumber   String
+  customerName  String
+  customerEmail String?
+  customerPhone String?
+  shippingAddress String?
+  items         String   // JSON array of { productId, name, qty, price, total }
+  subtotal      Int
+  tax           Int      @default(0)
+  discount      Int      @default(0)
+  total         Int
+  status        String   @default("new") // new | confirmed | shipped | delivered | cancelled
+  paymentStatus String   @default("unpaid") // unpaid | partial | paid | refunded
+  paymentMethod String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items2       OrderItem[]
+  invoices     Invoice[]
+
+  @@index([businessId])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+  name        String
+  qty         Int
+  price       Int
+  total       Int
+
+  @@index([orderId])
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  orderId       String?
+  order         Order?   @relation(fields: [orderId], references: [id])
+  userId        String?
+  user          User?    @relation("InvoiceUser", fields: [userId], references: [id])
+  invoiceNumber String
+  customerName  String
+  customerEmail String?
+  items         String   // JSON array
+  subtotal      Int
+  tax           Int      @default(0)
+  total         Int
+  status        String   @default("draft") // draft | sent | paid | overdue | cancelled
+  dueDate       DateTime?
+  paidAt        DateTime?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  address     String?
+  notes       String?
+  tags        String   @default("[]") // JSON array
+  totalOrders Int      @default(0)
+  totalSpent  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  category    String
+  amount      Int
+  description String
+  date        DateTime
+  receipt     String?
+  createdAt   DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model Staff {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  name        String
+  email       String
+  role        String   @default("staff") // manager | staff | accountant
+  permissions String   @default("[]") // JSON array
+  active      Boolean  @default(true)
+  invitedAt   DateTime @default(now())
+  joinedAt    DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model Subscription {
+  id            String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  plan         String   @default("free") // free | premium | enterprise
+  status       String   @default("active") // active | cancelled | expired | past_due
+  amount       Int      @default(0)
+  billingCycle String   @default("monthly") // monthly | yearly
+  startDate    DateTime @default(now())
+  endDate      DateTime?
+  paymentMethod String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model AdminAction {
+  id          String   @id @default(cuid())
+  adminId     String
+  admin       User     @relation(fields: [adminId], references: [id])
+  action      String   // business_approve | business_verify | business_suspend | user_role_change | review_remove etc.
+  targetType  String   // business | user | review | enquiry | message
+  targetId    String
+  metadata    String   @default("{}") // JSON
+  createdAt   DateTime @default(now())
+
+  @@index([adminId])
+  @@index([targetType, targetId])
 }

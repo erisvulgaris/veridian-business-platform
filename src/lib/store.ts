@@ -45,6 +45,8 @@ export type View =
   | { name: 'product'; id: string }
   | { name: 'service'; id: string }
   | { name: 'dashboard' }
+  | { name: 'erp' }
+  | { name: 'admin' }
   | { name: 'saved' }
   | { name: 'collections' }
   | { name: 'compare'; ids: string[] }

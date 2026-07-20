@@ -3,10 +3,12 @@
 import * as React from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAppStore } from '@/lib/store'
+import { AuthProvider, useAuth } from '@/lib/auth-context'
 import { AppHeader } from '@/components/app-header'
 import { AppFooter } from '@/components/app-footer'
 import { AiAssistant } from '@/components/ai-assistant'
 import { CompareTray } from '@/components/compare-tray'
+import { AuthModal } from '@/components/auth-modal'
 import { HomeView } from '@/components/views/home-view'
 import { BusinessView } from '@/components/views/business-view'
 import { ProductView } from '@/components/views/product-view'
@@ -14,19 +16,56 @@ import { ServiceView } from '@/components/views/service-view'
 import { SearchView } from '@/components/views/search-view'
 import { CategoryView } from '@/components/views/category-view'
 import { DashboardView } from '@/components/views/dashboard-view'
+import { ErpView } from '@/components/views/erp-view'
+import { AdminView } from '@/components/views/admin-view'
 import { SavedView } from '@/components/views/saved-view'
 import { CollectionsView } from '@/components/views/collections-view'
 import { CompareView } from '@/components/views/compare-view'
 import { ProductCompareView } from '@/components/views/product-compare-view'
 import { ServiceCompareView } from '@/components/views/service-compare-view'
 
-export default function Home() {
+function AppContent() {
   const { view, compareIds } = useAppStore()
+  const { user } = useAuth()
 
   // Scroll to top on view change
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [view])
+
+  // Guard admin/ERP views
+  const isAdminView = view.name === 'admin'
+  const isErpView = view.name === 'erp'
+
+  if (isAdminView && (!user || !['super_admin', 'admin'].includes(user.role))) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <AppHeader />
+        <main className="flex flex-1 items-center justify-center">
+          <div className="text-center">
+            <p className="text-sm font-semibold">Admin access required</p>
+            <p className="mt-1 text-xs text-muted-foreground">Sign in with an admin account to access this page.</p>
+          </div>
+        </main>
+        <AppFooter />
+      </div>
+    )
+  }
+
+  if (isErpView && !user) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <AppHeader />
+        <main className="flex flex-1 items-center justify-center">
+          <div className="text-center">
+            <p className="text-sm font-semibold">Sign in required</p>
+            <p className="mt-1 text-xs text-muted-foreground">Sign in to access the free ERP.</p>
+          </div>
+        </main>
+        <AppFooter />
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -47,7 +86,16 @@ export default function Home() {
       <AppFooter />
       <AiAssistant />
       <CompareTray />
+      <AuthModal />
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 
@@ -60,6 +108,8 @@ function viewKey(view: ReturnType<typeof useAppStore.getState>['view']): string 
     case 'product': return `prod:${view.id}`
     case 'service': return `svc:${view.id}`
     case 'dashboard': return 'dashboard'
+    case 'erp': return 'erp'
+    case 'admin': return 'admin'
     case 'saved': return 'saved'
     case 'collections': return 'collections'
     case 'compare': return `compare:${view.ids.join(',')}`
@@ -78,6 +128,8 @@ function renderView(view: ReturnType<typeof useAppStore.getState>['view'], compa
     case 'product': return <ProductView id={view.id} />
     case 'service': return <ServiceView id={view.id} />
     case 'dashboard': return <DashboardView />
+    case 'erp': return <ErpView />
+    case 'admin': return <AdminView />
     case 'saved': return <SavedView />
     case 'collections': return <CollectionsView />
     case 'compare': return <CompareView ids={view.ids} />
