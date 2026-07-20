@@ -457,3 +457,46 @@ Stage Summary:
 - Monetization: free listing + free ERP forever, premium listings (₹999/mo) and enterprise (₹4999/mo) for premium features.
 - New artifacts: docs/PRD.md, src/lib/auth.ts, src/lib/auth-context.tsx, src/components/auth-modal.tsx, src/components/views/erp-view.tsx, src/components/views/admin-view.tsx, 14 new API routes (auth, erp, admin).
 - GitHub: https://github.com/erisvulgaris/veridian-business-platform (public repo, main branch)
+
+---
+Task ID: 11 (cron review — admin panel enhancements)
+Agent: Cron webDevReview
+Task: QA the platform, add audit log + subscription management to admin panel.
+
+Work Log:
+- Reviewed worklog (Tasks 1-10). Platform had: enterprise ERP, super admin panel (5 tabs), auth system, 20 businesses, collections, messaging, comparison, analytics, AI features.
+- QA via agent-browser: home, admin panel, ERP panel all functional. Logged in as super admin (admin@veridian.app), verified admin overview shows platform stats (20 businesses, 1 user, 65 reviews), ERP shows all 7 modules (Overview/Inventory/Orders/Invoices/Customers/Expenses/Staff), inventory module loads correctly.
+
+New features added:
+- Admin Action Log (audit trail):
+  - `GET /api/admin/audit-log` — lists all admin actions with admin name/email, action type, target type/id, metadata, timestamp.
+  - `AuditLog` component in admin panel: shows all admin actions with contextual icons (verify=sucess, suspend=rose, feature=crown, upgrade=violet), admin name, target info, timestamp. Empty state with CTA.
+  - All admin actions (business verify, feature, suspend, user role change, review moderation, claim approval, subscription changes) are automatically logged via AdminAction model.
+- Subscription/Billing Management:
+  - `GET /api/admin/subscriptions` — lists all subscriptions with filters (plan, status), includes business name. Returns summary stats (MRR, active count, plan breakdown).
+  - `PATCH /api/admin/subscriptions` — upgrade (free→premium→enterprise), cancel, reactivate. Updates business verification level on upgrade. Super admin only.
+  - `SubscriptionManagement` component: stat cards (MRR, Premium, Enterprise, Active), plan/status filters, subscription list with upgrade/cancel/reactivate actions. Updates business verified status on upgrade.
+  - Seeded 20 subscriptions (7 premium @₹999, 3 enterprise @₹4999) — MRR ₹21,990.
+- Admin panel now has 7 tabs: Overview, Businesses, Users, Reviews, Claims, Billing, Audit Log.
+
+Verification:
+- All APIs return 200: audit log (2 entries), subscriptions (20 total, MRR ₹21,990), admin dashboard, ERP dashboard.
+- ESLint clean.
+- Code pushed to GitHub: https://github.com/erisvulgaris/veridian-business-platform
+
+Stage Summary:
+- Platform now has: full audit trail, subscription/billing management with MRR tracking, 7-tab admin panel.
+- New artifacts: `src/app/api/admin/audit-log/route.ts`, `src/app/api/admin/subscriptions/route.ts`.
+- Modified: `src/components/views/admin-view.tsx` (2 new tabs + components).
+- All prior features intact; no regressions.
+- GitHub: https://github.com/erisvulgaris/veridian-business-platform (updated)
+
+Unresolved / Next-phase priorities:
+- Real-time messaging (WebSocket/SSE).
+- SEO landing pages per category/city.
+- Map: real tile option.
+- User authentication UI improvements (password reset, email verification).
+- Collections: share collection link.
+- Admin settings page (categories, verification config, feature flags).
+- Export reports (CSV/Excel).
+- Email notifications.
