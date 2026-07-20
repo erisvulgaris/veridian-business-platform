@@ -7,6 +7,7 @@ import {
   FileText, MessageSquare, Users, BarChart3, Megaphone, Plus, ArrowUpRight,
   ShieldCheck, Boxes, Receipt, ShoppingCart, CreditCard, Calendar, Sparkles,
   Mail, Phone, Building2, Clock, CheckCircle2, Circle, Archive, Reply, ChevronDown,
+  MessagesSquare, Send, ArrowLeft,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import type { Business } from '@/lib/types'
@@ -52,7 +53,7 @@ export function DashboardView() {
   const { data: bizData, isLoading: bizLoading } = useSWR<{ businesses: Business[] }>('/api/businesses?limit=60', fetcher)
   const businesses = bizData?.businesses ?? []
   const [selectedSlug, setSelectedSlug] = React.useState<string | null>(null)
-  const [dashTab, setDashTab] = React.useState<'overview' | 'analytics'>('overview')
+  const [dashTab, setDashTab] = React.useState<'overview' | 'analytics' | 'messages'>('overview')
   const [bizPickerOpen, setBizPickerOpen] = React.useState(false)
 
   // Use the first business by default, or the selected one
@@ -205,10 +206,18 @@ export function DashboardView() {
         >
           <BarChart3 className="h-3.5 w-3.5" /> Analytics
         </button>
+        <button
+          onClick={() => setDashTab('messages')}
+          className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition', dashTab === 'messages' ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border hover:border-primary/40')}
+        >
+          <MessagesSquare className="h-3.5 w-3.5" /> Messages
+        </button>
       </div>
 
       {dashTab === 'analytics' ? (
         <AnalyticsView businessSlug={business.slug} />
+      ) : dashTab === 'messages' ? (
+        <MessagesInbox businessSlug={business.slug} businessName={business.name} />
       ) : (
         <>
       {/* ERP modules */}
@@ -469,4 +478,156 @@ function Section({ title, action, children }: { title: string; action?: React.Re
 
 function CheckIcon() {
   return <svg className="ml-auto h-3.5 w-3.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+}
+
+function MessagesInbox({ businessSlug, businessName }: { businessSlug: string; businessName: string }) {
+  const { data: threadsData, isLoading, mutate } = useSWR<{ threads: any[]; total: number }>(
+    `/api/businesses/${businessSlug}/messages`,
+    fetcher
+  )
+  const threads = threadsData?.threads ?? []
+  const [activeThread, setActiveThread] = React.useState<string | null>(null)
+  const [reply, setReply] = React.useState('')
+  const [sending, setSending] = React.useState(false)
+
+  const { data: threadData, mutate: mutateThread } = useSWR<{ messages: any[] }>(
+    activeThread ? `/api/threads/${activeThread}` : null,
+    fetcher
+  )
+  const messages = threadData?.messages ?? []
+  const scrollRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+  }, [messages])
+
+  const sendReply = async () => {
+    if (!reply.trim() || !activeThread) return
+    setSending(true)
+    try {
+      await fetch(`/api/threads/${activeThread}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderName: businessName,
+          senderEmail: 'business@veridian.local',
+          content: reply,
+          senderRole: 'business',
+        }),
+      })
+      setReply('')
+      mutateThread()
+      mutate()
+    } catch {
+      toast.error('Failed to send')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const totalUnread = threads.reduce((s, t) => s + (t.unread || 0), 0)
+
+  return (
+    <div className="grid gap-3 md:grid-cols-[300px_1fr] h-[calc(100vh-280px)] min-h-[400px]">
+      {/* Thread list */}
+      <div className="flex flex-col rounded-2xl border border-border bg-card card-elevated overflow-hidden">
+        <div className="border-b border-border px-3 py-2.5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Inbox</h3>
+            {totalUnread > 0 && <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">{totalUnread} unread</span>}
+          </div>
+        </div>
+        <div className="scrollbar-thin flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="space-y-2 p-2">
+              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
+            </div>
+          ) : threads.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+              <MessagesSquare className="h-8 w-8 text-muted-foreground/30" />
+              <p className="mt-2 text-xs font-medium text-muted-foreground">No messages yet</p>
+              <p className="text-[10px] text-muted-foreground/70">Customer messages will appear here</p>
+            </div>
+          ) : (
+            threads.map((t) => (
+              <button
+                key={t.threadId}
+                onClick={() => { setActiveThread(t.threadId); mutate() }}
+                className={cn('flex w-full flex-col gap-0.5 border-b border-border/50 px-3 py-2.5 text-left transition hover:bg-accent', activeThread === t.threadId && 'bg-accent')}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                    {t.customerName.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <p className="truncate text-xs font-semibold">{t.customerName}</p>
+                      {t.unread > 0 && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                      <span className="ml-auto shrink-0 text-[9px] text-muted-foreground">{timeAgo(t.lastAt)}</span>
+                    </div>
+                    <p className="truncate text-[10px] text-muted-foreground">{t.lastMessage}</p>
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Message thread */}
+      <div className="flex flex-col rounded-2xl border border-border bg-card card-elevated overflow-hidden">
+        {!activeThread ? (
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <MessagesSquare className="h-10 w-10 text-muted-foreground/30" />
+            <p className="mt-2 text-sm font-medium text-muted-foreground">Select a conversation</p>
+            <p className="text-xs text-muted-foreground/70">Choose a thread from the left to view messages</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
+              <button onClick={() => setActiveThread(null)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent md:hidden">
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">{messages[0]?.senderRole === 'customer' ? messages[0]?.senderName : threads.find(t => t.threadId === activeThread)?.customerName}</p>
+                <p className="truncate text-[10px] text-muted-foreground">{threads.find(t => t.threadId === activeThread)?.customerEmail}</p>
+              </div>
+            </div>
+            <div ref={scrollRef} className="scrollbar-thin flex-1 space-y-2 overflow-y-auto p-3">
+              {messages.map((m) => (
+                <div key={m.id} className={cn('flex', m.senderRole === 'business' ? 'justify-end' : 'justify-start')}>
+                  <div className={cn(
+                    'max-w-[75%] rounded-2xl px-3 py-2 text-xs',
+                    m.senderRole === 'business'
+                      ? 'rounded-br-sm bg-primary text-primary-foreground'
+                      : 'rounded-bl-sm bg-secondary text-secondary-foreground'
+                  )}>
+                    <p className="whitespace-pre-line">{m.content}</p>
+                    <p className={cn('mt-1 text-[9px]', m.senderRole === 'business' ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
+                      {timeAgo(m.createdAt)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-border p-2.5">
+              <div className="flex items-end gap-2">
+                <textarea
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply() } }}
+                  rows={1}
+                  placeholder="Type your reply…"
+                  className="max-h-24 min-h-[36px] flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <Button size="icon" className="h-9 w-9 shrink-0" onClick={sendReply} disabled={sending || !reply.trim()}>
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
 }

@@ -10,6 +10,7 @@ import {
   Facebook, Instagram, Linkedin, Twitter, GitCompare, CheckCircle2, Loader2,
   Flame, X as XIcon, ChevronLeft, ChevronRight as ChevronRightIcon,
   ZoomIn, Send, Bell, BellRing, FolderPlus, FolderCheck, Folder, Plus,
+  MessagesSquare,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import type { Business, Review } from '@/lib/types'
@@ -20,6 +21,7 @@ import { BusinessCard } from '@/components/business-card'
 import { ImageLightbox, useLightbox } from '@/components/image-lightbox'
 import { RFQModal } from '@/components/rfq-modal'
 import { ClaimModal } from '@/components/claim-modal'
+import { MessageModal } from '@/components/message-modal'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -75,6 +77,7 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
   const galleryLightbox = useLightbox()
   const [rfqOpen, setRfqOpen] = React.useState(false)
   const [claimOpen, setClaimOpen] = React.useState(false)
+  const [messageOpen, setMessageOpen] = React.useState(false)
 
   const gallery = b.gallery
   const visibleGallery = showAllGallery ? gallery : gallery.slice(0, 6)
@@ -162,6 +165,9 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-6">
           <Button size="sm" className="h-9 gap-1.5" onClick={() => window.open(`tel:${b.phone}`)}>
             <Phone className="h-3.5 w-3.5" /> Call
+          </Button>
+          <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => setMessageOpen(true)}>
+            <MessagesSquare className="h-3.5 w-3.5" /> Message
           </Button>
           <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => setRfqOpen(true)}>
             <MessageSquare className="h-3.5 w-3.5" /> Get Quote
@@ -437,6 +443,14 @@ function BusinessDetail({ business: b }: { business: Business & { products: any[
       <ClaimModal
         open={claimOpen}
         onClose={() => setClaimOpen(false)}
+        businessName={b.name}
+        businessSlug={b.slug}
+      />
+
+      {/* Message modal */}
+      <MessageModal
+        open={messageOpen}
+        onClose={() => setMessageOpen(false)}
         businessName={b.name}
         businessSlug={b.slug}
       />

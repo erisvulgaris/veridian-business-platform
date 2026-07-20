@@ -60,6 +60,7 @@ model Business {
   services        Service[]
   reviews         Review[]
   enquiries       Enquiry[]
+  messages        Message[]
 }
 
 model Product {
@@ -144,6 +145,22 @@ model Enquiry {
   createdAt   DateTime @default(now())
 
   @@index([businessId])
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  threadId    String   // groups messages between a customer and a business
+  senderName  String
+  senderEmail String
+  senderRole  String   // customer | business
+  content     String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([businessId])
+  @@index([threadId])
 }
 
 model Category {
