@@ -30,6 +30,17 @@ export function ProductView({ id }: { id: string }) {
   const [activeImage, setActiveImage] = React.useState(0)
   const [rfqOpen, setRfqOpen] = React.useState(false)
 
+  const share = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: p?.name || 'Product', text: p?.description?.slice(0, 100), url: window.location.href })
+      } else {
+        await navigator.clipboard.writeText(window.location.href)
+        toast.success('Link copied to clipboard')
+      }
+    } catch {}
+  }
+
   React.useEffect(() => { setActiveImage(0) }, [id])
 
   if (isLoading) {
@@ -109,7 +120,7 @@ export function ProductView({ id }: { id: string }) {
           <p className="mt-3 text-sm leading-relaxed text-foreground/90">{p.description}</p>
 
           {/* Actions */}
-          <div className="mt-4 grid grid-cols-3 gap-2">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Button className="h-10 gap-1.5" onClick={() => setRfqOpen(true)}>
               <ShoppingCart className="h-4 w-4" /> <span className="hidden sm:inline">Quote</span>
             </Button>
@@ -125,7 +136,10 @@ export function ProductView({ id }: { id: string }) {
                 toast.success(compareProductIds.includes(p.id) ? 'Removed from compare' : `Added to compare (${compareProductIds.length + 1}/3)`)
               }}
             >
-              <GitCompare className="h-4 w-4" /> {compareProductIds.includes(p.id) ? 'Added' : 'Compare'}
+              <GitCompare className="h-4 w-4" /> <span className="hidden sm:inline">Compare</span>
+            </Button>
+            <Button variant="outline" className="h-10 gap-1.5" onClick={share}>
+              <Share2 className="h-4 w-4" /> <span className="hidden sm:inline">Share</span>
             </Button>
           </div>
 

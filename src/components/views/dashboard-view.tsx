@@ -14,6 +14,7 @@ import { VerificationBadge } from '@/components/verification-badge'
 import { RatingStars } from '@/components/rating-stars'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { AnalyticsView } from '@/components/views/analytics-view'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { timeAgo, formatNumber } from '@/lib/types'
@@ -51,6 +52,7 @@ export function DashboardView() {
   const { data: bizData, isLoading: bizLoading } = useSWR<{ businesses: Business[] }>('/api/businesses?limit=60', fetcher)
   const businesses = bizData?.businesses ?? []
   const [selectedSlug, setSelectedSlug] = React.useState<string | null>(null)
+  const [dashTab, setDashTab] = React.useState<'overview' | 'analytics'>('overview')
   const [bizPickerOpen, setBizPickerOpen] = React.useState(false)
 
   // Use the first business by default, or the selected one
@@ -189,6 +191,26 @@ export function DashboardView() {
         <StatCard icon={<Package className="h-4 w-4" />} label="Products" value={String(products.length)} change={products.length > 0 ? 'live' : 'none'} color="#7c3aed" />
       </div>
 
+      {/* Dashboard tab toggle */}
+      <div className="mb-4 flex items-center gap-1.5">
+        <button
+          onClick={() => setDashTab('overview')}
+          className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition', dashTab === 'overview' ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border hover:border-primary/40')}
+        >
+          <LayoutDashboard className="h-3.5 w-3.5" /> Overview
+        </button>
+        <button
+          onClick={() => setDashTab('analytics')}
+          className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition', dashTab === 'analytics' ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border hover:border-primary/40')}
+        >
+          <BarChart3 className="h-3.5 w-3.5" /> Analytics
+        </button>
+      </div>
+
+      {dashTab === 'analytics' ? (
+        <AnalyticsView businessSlug={business.slug} />
+      ) : (
+        <>
       {/* ERP modules */}
       <div className="mb-4">
         <div className="mb-2 flex items-center gap-2">
@@ -402,6 +424,8 @@ export function DashboardView() {
           </Section>
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }

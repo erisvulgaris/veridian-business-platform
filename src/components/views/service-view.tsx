@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import useSWR from 'swr'
-import { Wrench, ChevronRight, Clock, MapPin, CheckCircle2, FileText, Store } from 'lucide-react'
+import { Wrench, ChevronRight, Clock, MapPin, CheckCircle2, FileText, Store, Calendar, Phone, Share2 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import type { Service, Business } from '@/lib/types'
 import { VerificationBadge } from '@/components/verification-badge'
@@ -19,6 +19,17 @@ export function ServiceView({ id }: { id: string }) {
   const s = data?.service
   const [activePhoto, setActivePhoto] = React.useState(0)
   const [rfqOpen, setRfqOpen] = React.useState(false)
+
+  const share = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: s?.name || 'Service', text: s?.description?.slice(0, 100), url: window.location.href })
+      } else {
+        await navigator.clipboard.writeText(window.location.href)
+        toast.success('Link copied to clipboard')
+      }
+    } catch {}
+  }
 
   React.useEffect(() => setActivePhoto(0), [id])
 
@@ -83,9 +94,16 @@ export function ServiceView({ id }: { id: string }) {
           <VerificationBadge level={s.business.verified} size="xs" />
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <Button className="h-10" onClick={() => setRfqOpen(true)}>Book service</Button>
-          <Button variant="outline" className="h-10" onClick={() => window.open(`tel:${s.business.phone}`)}>Call business</Button>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <Button className="h-10 gap-1.5" onClick={() => setRfqOpen(true)}>
+            <Calendar className="h-4 w-4" /> Book service
+          </Button>
+          <Button variant="outline" className="h-10 gap-1.5" onClick={() => window.open(`tel:${s.business.phone}`)}>
+            <Phone className="h-4 w-4" /> Call
+          </Button>
+          <Button variant="outline" className="h-10 gap-1.5" onClick={share}>
+            <Share2 className="h-4 w-4" /> Share
+          </Button>
         </div>
 
         {/* Deliverables & requirements */}

@@ -283,3 +283,45 @@ Unresolved / Next-phase priorities:
 - Business claim flow.
 - Collections: share collection link.
 - Add more rich data: business analytics charts, review trends.
+
+---
+Task ID: 7 (cron review round 6)
+Agent: Cron webDevReview
+Task: QA the platform, build business analytics with charts, add share functionality.
+
+Work Log:
+- Reviewed worklog (Tasks 1-6). Platform had: 20 businesses, collections, RFQ, dashboard enquiry inbox, follow/helpful voting, map/list toggle, localStorage, "opens at" status, hours highlight, product comparison with price diff.
+- QA via agent-browser: home, business profile, product detail all functional. No errors. VLM suggested micro-interactions, empty states, loading skeletons, visual hierarchy.
+- Tested product compare flow end-to-end (working).
+
+New features added:
+- Business analytics with charts (full):
+  - `GET /api/businesses/[id]/analytics` API: generates 12 weeks of view/enquiry time-series data (deterministic from business ID hash), rating distribution from real reviews, enquiry status breakdown, product performance ranking, 6-month review trend with avg ratings per month.
+  - `AnalyticsView` component (`src/components/views/analytics-view.tsx`): 4 stat cards (views, rating, enquiries, products) with trend indicators, area chart for views+enquiries over 12 weeks, bar chart for rating distribution (5★ to 1★), pie chart for enquiry status (new/read/replied/closed), line chart for review rating trend, horizontal bar chart for product performance, AI insight card that adapts to data.
+  - Dashboard tab toggle: "Overview" (existing dashboard) and "Analytics" (new charts view). Toggle appears after stats row.
+  - Uses recharts (already installed) with theme-aware colors (CSS variables), responsive containers, custom tooltips.
+- Share functionality:
+  - Product view: 4-column actions (Quote, Save, Compare, Share). Native Web Share API with clipboard fallback + toast.
+  - Service view: 3-column actions (Book service, Call, Share). Same share logic.
+  - Business view already had share (round 1).
+
+Verification:
+- agent-browser: dashboard Overview renders with enquiries inbox. Clicked "Analytics" tab → all charts render (area chart for views/enquiries, bar chart for ratings, pie chart for enquiry status, line chart for review trend, product performance bar chart, AI insight). VLM confirmed "charts render correctly, no visual issues, premium/polished layout".
+- APIs: home 200, analytics 200 (returns 12 weeks, ratingDist, productPerf, reviewTrend), enquiries 200.
+- ESLint: clean.
+
+Stage Summary:
+- Platform now has: full business analytics dashboard with 5 chart types, dashboard tab toggle, share on all detail views.
+- New artifacts: `src/app/api/businesses/[id]/analytics/route.ts`, `src/components/views/analytics-view.tsx`.
+- Modified: `src/components/views/dashboard-view.tsx` (analytics tab + toggle), `src/components/views/product-view.tsx` (share + 4-col actions), `src/components/views/service-view.tsx` (share + 3-col actions).
+- All prior features intact; no regressions.
+
+Unresolved / Next-phase priorities:
+- Service comparison (currently only business + product compare).
+- SEO landing pages per category/city.
+- Business messaging / real-time chat.
+- Map: real tile option.
+- User authentication (NextAuth.js).
+- Business claim flow.
+- Collections: share collection link.
+- Add more seed businesses for richer analytics data.
