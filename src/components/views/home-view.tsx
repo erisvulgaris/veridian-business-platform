@@ -58,17 +58,17 @@ export function HomeView() {
         <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
           <div className="max-w-xl">
             <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
-              <Sparkles className="h-3 w-3" /> Map-first discovery
+              <Sparkles className="h-3 w-3" /> B2B Marketplace
             </div>
             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-              Discover every business <span className="text-gradient">worth knowing</span>
+              The B2B discovery platform for <span className="text-gradient">verified suppliers</span>
             </h1>
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              Verified businesses, live products and services — all on one intelligent map.
+              Find manufacturers, distributors, raw material suppliers and industrial service providers — all verified, all on one intelligent map.
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <Stat label="Businesses" value="12+" />
+            <Stat label="B2B Suppliers" value="20+" />
             <div className="h-8 w-px bg-border" />
             <Stat label="Categories" value="12" />
             <div className="h-8 w-px bg-border" />
@@ -406,14 +406,14 @@ function ERPTeaser() {
     <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-card to-accent/30 p-6 sm:p-8">
       <div className="relative z-10 max-w-2xl">
         <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
-          <Sparkles className="h-3 w-3" /> Coming soon — Free ERP
+          <Sparkles className="h-3 w-3" /> Free ERP for B2B Suppliers
         </div>
-        <h2 className="text-2xl font-bold tracking-tight">A living business profile, powered by your operations</h2>
+        <h2 className="text-2xl font-bold tracking-tight">A complete B2B operating system — free for every supplier</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Businesses will manage inventory, products, pricing and hours inside a free ERP. Public information syncs to their Veridian profile automatically — so discovery stays accurate with zero manual effort.
+          Manage inventory, B2B orders, invoices, customers and expenses inside a free ERP. Your product catalog and stock levels sync to your public Veridian profile automatically — so B2B buyers always see accurate, live data.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          {['Inventory sync', 'Live pricing', 'Stock availability', 'Promotions', 'Business hours'].map((t) => (
+          {['Inventory & Stock', 'B2B Order Management', 'Invoice Generation', 'Customer CRM', 'Expense Tracking', 'Staff Management'].map((t) => (
             <span key={t} className="rounded-full bg-card border border-border px-2.5 py-1 text-[11px] font-medium">{t}</span>
           ))}
         </div>

@@ -6,13 +6,14 @@ import { useAppStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 
 const QUICK_SEARCHES = [
-  'Best orthopedic hospital',
-  'Rice mill near me',
-  'Automatic flour mill machine',
-  'Pharmacy selling insulin',
-  'Stainless steel tank manufacturer',
-  'CBSE school',
-  '5-star hotel with banquets',
+  'Steel supplier near me',
+  'CNC machining manufacturer',
+  'B2B packaging supplier',
+  'Industrial bearings wholesale',
+  'Organic rice bulk supplier',
+  'Solar panel EPC company',
+  'Logistics & warehousing partner',
+  'Custom PCB assembly',
 ]
 
 export function SearchBar({ autoFocus = false, large = false }: { autoFocus?: boolean; large?: boolean }) {

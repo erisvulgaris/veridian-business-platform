@@ -10,10 +10,10 @@ import ReactMarkdown from 'react-markdown'
 interface Msg { role: 'user' | 'assistant'; content: string }
 
 const SUGGESTIONS = [
-  'Best orthopedic hospital near me',
-  'Find a manufacturer of stainless steel tanks',
-  'Compare rice mills in the area',
-  'Which pharmacy sells insulin?',
+  'Find steel suppliers near me',
+  'Who manufactures CNC machined parts?',
+  'Compare B2B packaging suppliers',
+  'Find industrial bearings wholesale',
 ]
 
 export function AiAssistant() {
@@ -22,7 +22,7 @@ export function AiAssistant() {
     {
       role: 'assistant',
       content:
-        "Hi! I'm your **Veridian Assistant**. I can help you discover businesses, products and services across the directory. Ask me anything — like *\"best hospital for orthopedics\"* or *\"who manufactures flour mill machines?\"*",
+        "Hi! I'm your **Veridian B2B Assistant**. I can help you find verified manufacturers, suppliers, distributors and industrial service providers. Ask me anything — like *\"find steel suppliers\"* or *\"who does CNC machining?\"*",
     },
   ])
   const [input, setInput] = React.useState('')

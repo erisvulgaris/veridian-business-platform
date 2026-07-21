@@ -21,7 +21,7 @@ export function AppFooter() {
               <span className="text-sm font-bold">Veridian</span>
             </div>
             <p className="text-xs text-muted-foreground max-w-xs">
-              The operating system for discovering businesses, products, services and verified commercial information.
+              The B2B marketplace for discovering verified manufacturers, distributors, suppliers and industrial service providers. Free ERP included.
             </p>
           </div>
           <div>
@@ -29,8 +29,8 @@ export function AppFooter() {
             <ul className="space-y-1.5 text-xs">
               <li><button className="text-foreground/80 hover:text-primary" onClick={() => setView({ name: 'home' })}>Map</button></li>
               <li><button className="text-foreground/80 hover:text-primary" onClick={() => setView({ name: 'category', slug: 'manufacturers' })}>Manufacturers</button></li>
-              <li><button className="text-foreground/80 hover:text-primary" onClick={() => setView({ name: 'category', slug: 'hospitals' })}>Hospitals</button></li>
-              <li><button className="text-foreground/80 hover:text-primary" onClick={() => setView({ name: 'category', slug: 'restaurants' })}>Restaurants</button></li>
+              <li><button className="text-foreground/80 hover:text-primary" onClick={() => setView({ name: 'category', slug: 'wholesalers-distributors' })}>Wholesalers</button></li>
+              <li><button className="text-foreground/80 hover:text-primary" onClick={() => setView({ name: 'category', slug: 'raw-materials' })}>Raw Materials</button></li>
             </ul>
           </div>
           <div>
@@ -53,7 +53,7 @@ export function AppFooter() {
           </div>
         </div>
         <div className="mt-6 flex flex-col items-center justify-between gap-2 border-t border-border pt-4 sm:flex-row">
-          <p className="text-[11px] text-muted-foreground">© {new Date().getFullYear()} Veridian. Discover every business worth knowing.</p>
+          <p className="text-[11px] text-muted-foreground">© {new Date().getFullYear()} Veridian. The B2B supplier discovery platform.</p>
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
             <button className="hover:text-foreground">Privacy</button>
             <button className="hover:text-foreground">Terms</button>

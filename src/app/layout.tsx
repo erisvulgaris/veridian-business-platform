@@ -15,15 +15,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Veridian — Discover Every Business Worth Knowing",
+  title: "Veridian — B2B Supplier Discovery Platform",
   description:
-    "The operating system for discovering businesses, products, services, inventory and pricing. Map-first, search-intelligent, verified trust.",
-  keywords: ["business directory", "discover businesses", "manufacturers", "hospitals", "products", "services", "verified business"],
+    "The B2B marketplace for discovering verified manufacturers, distributors, raw material suppliers and industrial service providers. Free ERP included.",
+  keywords: ["B2B marketplace", "b2b suppliers", "manufacturers", "wholesale", "industrial machinery", "raw materials", "verified suppliers", "b2b directory"],
   authors: [{ name: "Veridian" }],
   icons: { icon: "/logo.svg" },
   openGraph: {
-    title: "Veridian — Business Discovery Platform",
-    description: "Discover verified businesses, products and services across every industry.",
+    title: "Veridian — B2B Supplier Discovery Platform",
+    description: "Find verified B2B suppliers, manufacturers and distributors with live inventory and pricing.",
     siteName: "Veridian",
     type: "website",
   },

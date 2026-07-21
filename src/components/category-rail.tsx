@@ -2,16 +2,16 @@
 
 import * as React from 'react'
 import {
-  Hospital, Stethoscope, Factory, Cog, UtensilsCrossed, Pill, GraduationCap,
-  Building2, BedDouble, Package, Building, Car, type LucideIcon,
+  Factory, Cog, Package, Wrench, Boxes, Truck, Monitor, Building,
+  Sprout, Shirt, CircuitBoard, FlaskConical, Ship, type LucideIcon,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import type { Category } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 const ICONS: Record<string, LucideIcon> = {
-  Hospital, Stethoscope, Factory, Cog, UtensilsCrossed, Pill, GraduationCap,
-  Building2, BedDouble, Package, Building, Car,
+  Factory, Cog, Package, Wrench, Boxes, Truck, Monitor, Building,
+  Sprout, Shirt, CircuitBoard, FlaskConical, Ship,
 }
 
 export function CategoryRail({ categories }: { categories: Category[] }) {
