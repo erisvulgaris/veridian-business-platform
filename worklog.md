@@ -500,3 +500,48 @@ Unresolved / Next-phase priorities:
 - Admin settings page (categories, verification config, feature flags).
 - Export reports (CSV/Excel).
 - Email notifications.
+
+---
+Task ID: 12 (B2B-only pivot + QA)
+Agent: Cron webDevReview
+Task: Pivot platform to B2B-only listings, QA, and push to GitHub.
+
+Work Log:
+- Reviewed worklog (Tasks 1-11). Platform had: enterprise ERP, super admin panel (7 tabs), auth system, 20 businesses across 12 categories (including consumer categories like hospitals, restaurants, hotels, schools).
+- **Major pivot: limit platform to B2B listings only.** Removed all consumer-facing categories and businesses, replaced with B2B-only content.
+
+Changes:
+- **Categories**: Replaced 12 consumer+mixed categories with 14 B2B-only categories:
+  Manufacturers, Industrial Machinery, Wholesalers & Distributors, Industrial Supplies,
+  Raw Materials & Commodities, Packaging & Printing, Logistics & Supply Chain,
+  IT & Software Services, Construction & Building Materials, Agricultural Equipment,
+  Textile & Garments, Electronics & Components, Chemicals & Plastics, Import & Export.
+- **Businesses**: Replaced all 20 businesses with 21 B2B suppliers (SteelCorp, Nexus Precision,
+  Transworld Logistics, DataSync IT, BuildWell Construction, AgroTech Equipment,
+  Vardhman Textile, ChipTech Electronics, ChemCorp, GlobalTrade Exim, etc.)
+- **Products**: Added B2B fields: SKU, cost price, MOQ in FAQs, credit terms in payment methods,
+  bulk pricing tiers. All products tagged with B2B context.
+- **Reviews**: Updated to B2B context (B2B partner, procurement, MOQ, bulk pricing).
+- **Homepage**: Updated hero to "The B2B discovery platform for verified suppliers",
+  stats show "B2B Suppliers", ERP teaser highlights B2B features.
+- **Search**: Updated quick searches to B2B queries (steel supplier, CNC machining, B2B packaging, etc.)
+- **AI Assistant**: Updated system prompt for B2B context (MOQ, bulk pricing, credit terms,
+  OEM supply, wholesale, import/export, industrial sourcing). Updated suggestions + welcome message.
+- **Metadata**: Updated title, description, keywords for B2B SEO.
+- **Footer**: Updated copy + category links to B2B categories.
+- **CategoryRail**: Updated icons for new B2B categories (Factory, Cog, Truck, Monitor, etc.)
+
+Verification:
+- 21 B2B businesses seeded across 14 B2B categories — no consumer categories remain.
+- Search "steel" returns SteelCorp Raw Materials + BuildWell Construction Materials + 4 products.
+- AI search "steel supplier" returns 14 businesses with SteelCorp as #1.
+- Browser: hero shows "B2B Marketplace" badge, "The B2B discovery platform for verified suppliers",
+  category rail shows all B2B categories, business cards show B2B taglines.
+- ESLint clean.
+- Code pushed to GitHub: https://github.com/erisvulgaris/veridian-business-platform
+
+Stage Summary:
+- Platform is now exclusively B2B — no consumer-facing businesses or categories.
+- 21 verified B2B suppliers across 14 industrial categories.
+- Free ERP, super admin panel, auth system, AI features all intact.
+- GitHub updated with latest B2B-only code.
