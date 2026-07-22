@@ -6,7 +6,7 @@ import {
   Package, ShoppingCart, Receipt, Users, CreditCard, Briefcase, BarChart3,
   TrendingUp, TrendingDown, Plus, ArrowUpRight, ArrowDownRight, Search,
   Filter, MoreVertical, CheckCircle2, Clock, AlertCircle, IndianRupee,
-  Boxes, Trash2, Edit3, Send, Loader2,
+  Boxes, Trash2, Edit3, Send, Loader2, Crown,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -35,6 +35,7 @@ export function ErpView() {
 
   const modules = [
     { key: 'overview', label: 'Overview', icon: BarChart3 },
+    { key: 'products', label: 'Products', icon: Package },
     { key: 'inventory', label: 'Inventory', icon: Boxes },
     { key: 'orders', label: 'Orders', icon: ShoppingCart },
     { key: 'invoices', label: 'Invoices', icon: Receipt },
@@ -96,6 +97,7 @@ export function ErpView() {
       ) : (
         <>
           {activeModule === 'overview' && <ErpOverview businessId={businessId} />}
+          {activeModule === 'products' && <ProductsModule businessId={businessId} />}
           {activeModule === 'inventory' && <InventoryModule businessId={businessId} />}
           {activeModule === 'orders' && <OrdersModule businessId={businessId} />}
           {activeModule === 'invoices' && <InvoicesModule businessId={businessId} />}
@@ -193,6 +195,182 @@ function ErpOverview({ businessId }: { businessId: string }) {
               ))}
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// === Products ===
+function ProductsModule({ businessId }: { businessId: string }) {
+  const { data, isLoading, mutate } = useSWR(`/api/erp/products?businessId=${businessId}`, fetcher)
+  const products = data?.products ?? []
+  const [showForm, setShowForm] = React.useState(false)
+  const [editing, setEditing] = React.useState<any>(null)
+  const [deleting, setDeleting] = React.useState<string | null>(null)
+
+  const del = async (id: string) => {
+    if (!confirm('Delete this product?')) return
+    setDeleting(id)
+    try {
+      await fetch(`/api/erp/products/${id}`, { method: 'DELETE' })
+      toast.success('Product deleted')
+      mutate()
+    } finally { setDeleting(null) }
+  }
+
+  const toggleFeatured = async (p: any) => {
+    await fetch(`/api/erp/products/${p.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ featured: !p.featured }),
+    })
+    toast.success(p.featured ? 'Unfeatured' : 'Featured')
+    mutate()
+  }
+
+  const updateAvailability = async (id: string, availability: string) => {
+    await fetch(`/api/erp/products/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ availability }),
+    })
+    mutate()
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">Products ({products.length})</h3>
+          <p className="text-[11px] text-muted-foreground">Manage your B2B product catalog</p>
+        </div>
+        <Button size="sm" className="gap-1.5" onClick={() => { setShowForm(s => !s); setEditing(null) }}><Plus className="h-3.5 w-3.5" /> Add product</Button>
+      </div>
+
+      {showForm && <ProductForm businessId={businessId} editProduct={editing} onDone={() => { setShowForm(false); setEditing(null); mutate() }} />}
+
+      {isLoading ? (
+        <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
+      ) : products.length === 0 ? (
+        <EmptyState icon={<Package className="h-8 w-8" />} title="No products yet" subtitle="Add your first B2B product to start selling." />
+      ) : (
+        <div className="space-y-2">
+          {products.map((p: any) => (
+            <div key={p.id} className="rounded-xl border border-border bg-card p-3 card-elevated">
+              <div className="flex items-start gap-3">
+                <img src={p.images?.[0] || 'https://picsum.photos/seed/p/100/100'} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-semibold">{p.name}</p>
+                    {p.featured && <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">FEATURED</span>}
+                    <span className={cn('rounded-full px-1.5 py-0.5 text-[9px] font-bold', p.availability === 'in_stock' ? 'bg-emerald-500/10 text-emerald-600' : p.availability === 'low_stock' ? 'bg-amber-500/10 text-amber-600' : 'bg-zinc-500/10 text-zinc-500')}>{p.availability.replace(/_/g, ' ')}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">{p.brand} · {p.category} · SKU: {p.sku || 'N/A'}</p>
+                  <div className="mt-1 flex items-center gap-3 text-[10px]">
+                    <span className="font-bold text-primary">{formatPrice(p.priceMin, p.priceMax)}</span>
+                    <span className="text-muted-foreground">Stock: {p.stockQty}</span>
+                    <span className="text-muted-foreground">Views: {formatNumber(p.viewCount)}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <Button size="sm" variant="ghost" className="h-7 gap-1 text-[10px]" onClick={() => { setEditing(p); setShowForm(true) }}><Edit3 className="h-3 w-3" /> Edit</Button>
+                <Button size="sm" variant="ghost" className={cn('h-7 gap-1 text-[10px]', p.featured && 'text-amber-500')} onClick={() => toggleFeatured(p)}><Crown className="h-3 w-3" /> {p.featured ? 'Unfeature' : 'Feature'}</Button>
+                <select value={p.availability} onChange={(e) => updateAvailability(p.id, e.target.value)} className="h-7 rounded-md border border-border bg-background px-1.5 text-[10px] outline-none">
+                  <option value="in_stock">In stock</option>
+                  <option value="low_stock">Low stock</option>
+                  <option value="preorder">Pre-order</option>
+                  <option value="out_of_stock">Out of stock</option>
+                  <option value="made_to_order">Made to order</option>
+                </select>
+                <Button size="sm" variant="ghost" className="h-7 gap-1 text-[10px] text-rose-500" onClick={() => del(p.id)} disabled={deleting === p.id}><Trash2 className="h-3 w-3" /> Delete</Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ProductForm({ businessId, editProduct, onDone }: { businessId: string; editProduct: any; onDone: () => void }) {
+  const [form, setForm] = React.useState({
+    name: editProduct?.name || '',
+    description: editProduct?.description || '',
+    category: editProduct?.category || '',
+    brand: editProduct?.brand || '',
+    priceMin: editProduct?.priceMin || '',
+    priceMax: editProduct?.priceMax || '',
+    cost: editProduct?.cost || '',
+    sku: editProduct?.sku || '',
+    availability: editProduct?.availability || 'in_stock',
+    reorderLevel: editProduct?.reorderLevel || 5,
+  })
+  const [loading, setLoading] = React.useState(false)
+
+  const submit = async () => {
+    if (!form.name) { toast.error('Name required'); return }
+    setLoading(true)
+    try {
+      if (editProduct) {
+        // Update
+        const res = await fetch(`/api/erp/products/${editProduct.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        })
+        if (!res.ok) { const d = await res.json(); toast.error(d.error); return }
+        toast.success('Product updated')
+      } else {
+        // Create
+        const res = await fetch('/api/erp/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ businessId, ...form }),
+        })
+        if (!res.ok) { const d = await res.json(); toast.error(d.error); return }
+        toast.success('Product created')
+      }
+      onDone()
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="rounded-xl border-2 border-primary/20 bg-primary/[0.03] p-3 animate-scale-in">
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Product name *" className="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+          <input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} placeholder="Brand" className="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+        </div>
+        <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" rows={2} className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+        <div className="grid grid-cols-3 gap-2">
+          <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Category" className="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+          <input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="SKU" className="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+          <select value={form.availability} onChange={(e) => setForm({ ...form, availability: e.target.value })} className="h-9 rounded-lg border border-border bg-background px-2 text-sm outline-none">
+            <option value="in_stock">In stock</option>
+            <option value="low_stock">Low stock</option>
+            <option value="made_to_order">Made to order</option>
+            <option value="out_of_stock">Out of stock</option>
+          </select>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <label className="text-[9px] text-muted-foreground">Price min (₹)</label>
+            <input type="number" value={form.priceMin} onChange={(e) => setForm({ ...form, priceMin: e.target.value })} placeholder="0" className="h-9 w-full rounded-lg border border-border bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+          </div>
+          <div>
+            <label className="text-[9px] text-muted-foreground">Price max (₹)</label>
+            <input type="number" value={form.priceMax} onChange={(e) => setForm({ ...form, priceMax: e.target.value })} placeholder="0" className="h-9 w-full rounded-lg border border-border bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+          </div>
+          <div>
+            <label className="text-[9px] text-muted-foreground">Cost (₹)</label>
+            <input type="number" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} placeholder="0" className="h-9 w-full rounded-lg border border-border bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 pt-1">
+          <Button size="sm" variant="outline" onClick={onDone}>Cancel</Button>
+          <Button size="sm" onClick={submit} disabled={loading}>{loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : editProduct ? 'Update product' : 'Create product'}</Button>
         </div>
       </div>
     </div>
