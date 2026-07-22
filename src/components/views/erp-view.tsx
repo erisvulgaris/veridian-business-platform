@@ -142,24 +142,70 @@ function ErpOverview({ businessId }: { businessId: string }) {
         <StatCard icon={<TrendingDown className="h-4 w-4" />} label="Net profit" value={formatPrice(stats?.netProfit || 0, 0)} color={stats?.netProfit >= 0 ? '#10b981' : '#ef4444'} trend={`${stats?.netProfit >= 0 ? '+' : ''}${Math.round((stats?.netProfit / Math.max(stats?.revenue, 1)) * 100)}% margin`} />
       </div>
 
-      {/* Revenue chart */}
-      <div className="rounded-2xl border border-border bg-card p-4 card-elevated">
-        <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold"><TrendingUp className="h-4 w-4 text-primary" /> Revenue (last 6 months)</h3>
-        <ResponsiveContainer width="100%" height={220}>
-          <AreaChart data={monthlyRevenue}>
-            <defs>
-              <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#0f766e" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#0f766e" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
-            <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '0.75rem', fontSize: '12px' }} />
-            <Area type="monotone" dataKey="revenue" stroke="#0f766e" strokeWidth={2} fill="url(#revGrad)" name="Revenue" />
-          </AreaChart>
-        </ResponsiveContainer>
+      {/* Revenue + Orders charts */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card p-4 card-elevated">
+          <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold"><TrendingUp className="h-4 w-4 text-primary" /> Revenue (6 months)</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={monthlyRevenue}>
+              <defs>
+                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0f766e" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#0f766e" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '0.75rem', fontSize: '12px' }} />
+              <Area type="monotone" dataKey="revenue" stroke="#0f766e" strokeWidth={2} fill="url(#revGrad)" name="Revenue" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-4 card-elevated">
+          <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold"><ShoppingCart className="h-4 w-4 text-cyan-500" /> Orders (6 months)</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={monthlyRevenue}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '0.75rem', fontSize: '12px' }} />
+              <Bar dataKey="orders" fill="#0891b2" radius={[4, 4, 0, 0]} name="Orders" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="rounded-xl border border-border bg-card p-3 card-elevated">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+            <p className="text-lg font-bold">{stats?.lowStockItems || 0}</p>
+          </div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Low stock items</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-3 card-elevated">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-cyan-500" />
+            <p className="text-lg font-bold">{stats?.customers || 0}</p>
+          </div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Customers</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-3 card-elevated">
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4 text-rose-500" />
+            <p className="text-lg font-bold">{formatPrice(stats?.totalExpenses || 0, 0)}</p>
+          </div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total expenses</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-3 card-elevated">
+          <div className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4 text-violet-500" />
+            <p className="text-lg font-bold">{stats?.staff || 0}</p>
+          </div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Active staff</p>
+        </div>
       </div>
 
       {/* Top products + Recent orders */}
