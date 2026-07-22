@@ -6,7 +6,7 @@ import {
   Package, ShoppingCart, Receipt, Users, CreditCard, Briefcase, BarChart3,
   TrendingUp, TrendingDown, Plus, ArrowUpRight, ArrowDownRight, Search,
   Filter, MoreVertical, CheckCircle2, Clock, AlertCircle, IndianRupee,
-  Boxes, Trash2, Edit3, Send, Loader2, Crown,
+  Boxes, Trash2, Edit3, Send, Loader2, Crown, Building2,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -42,6 +42,7 @@ export function ErpView() {
     { key: 'customers', label: 'Customers', icon: Users },
     { key: 'expenses', label: 'Expenses', icon: CreditCard },
     { key: 'staff', label: 'Staff', icon: Briefcase },
+    { key: 'profile', label: 'Profile', icon: Building2 },
   ] as const
 
   return (
@@ -104,6 +105,7 @@ export function ErpView() {
           {activeModule === 'customers' && <CustomersModule businessId={businessId} />}
           {activeModule === 'expenses' && <ExpensesModule businessId={businessId} />}
           {activeModule === 'staff' && <StaffModule businessId={businessId} />}
+          {activeModule === 'profile' && <ProfileModule businessId={businessId} />}
         </>
       )}
     </div>
@@ -1026,6 +1028,153 @@ function StaffForm({ businessId, onDone }: { businessId: string; onDone: () => v
         </div>
       </div>
     </div>
+  )
+}
+
+// === Profile ===
+function ProfileModule({ businessId }: { businessId: string }) {
+  const { data, isLoading, mutate } = useSWR(`/api/erp/business?businessId=${businessId}`, fetcher)
+  const b = data?.business
+  const [form, setForm] = React.useState<any>(null)
+  const [saving, setSaving] = React.useState(false)
+
+  React.useEffect(() => {
+    if (b) setForm({
+      name: b.name || '', tagline: b.tagline || '', description: b.description || '',
+      phone: b.phone || '', email: b.email || '', website: b.website || '',
+      address: b.address || '', area: b.area || '', city: b.city || '',
+      state: b.state || '', pincode: b.pincode || '',
+      foundedYear: b.foundedYear || '', teamSize: b.teamSize || '',
+      responseTime: b.responseTime || '', brandColor: b.brandColor || '#0f766e',
+      certifications: (b.certifications || []).join(', '),
+      facilities: (b.facilities || []).join(', '),
+    })
+  }, [b])
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/erp/business', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessId,
+          name: form.name, tagline: form.tagline, description: form.description,
+          phone: form.phone, email: form.email, website: form.website,
+          address: form.address, area: form.area, city: form.city,
+          state: form.state, pincode: form.pincode,
+          foundedYear: Number(form.foundedYear) || undefined,
+          teamSize: form.teamSize, responseTime: form.responseTime, brandColor: form.brandColor,
+          certifications: form.certifications.split(',').map((s: string) => s.trim()).filter(Boolean),
+          facilities: form.facilities.split(',').map((s: string) => s.trim()).filter(Boolean),
+        }),
+      })
+      if (!res.ok) { const d = await res.json(); toast.error(d.error); return }
+      toast.success('Profile updated')
+      mutate()
+    } finally { setSaving(false) }
+  }
+
+  if (isLoading || !form) {
+    return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">Business Profile</h3>
+          <p className="text-[11px] text-muted-foreground">Update your B2B business information</p>
+        </div>
+        <Button size="sm" onClick={save} disabled={saving}>{saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save changes'}</Button>
+      </div>
+
+      {/* Basic info */}
+      <div className="rounded-2xl border border-border bg-card p-4 card-elevated space-y-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Basic Information</h4>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Business name">
+            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
+          </Field>
+          <Field label="Brand color">
+            <input type="color" value={form.brandColor} onChange={(e) => setForm({ ...form, brandColor: e.target.value })} className="h-9 w-full rounded-lg border border-border" />
+          </Field>
+        </div>
+        <Field label="Tagline">
+          <input value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} className={inputCls} />
+        </Field>
+        <Field label="Description">
+          <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className={cn(inputCls, 'resize-none')} />
+        </Field>
+      </div>
+
+      {/* Contact */}
+      <div className="rounded-2xl border border-border bg-card p-4 card-elevated space-y-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contact & Location</h4>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Phone">
+            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} />
+          </Field>
+          <Field label="Email">
+            <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />
+          </Field>
+        </div>
+        <Field label="Website">
+          <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} className={inputCls} />
+        </Field>
+        <Field label="Address">
+          <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputCls} />
+        </Field>
+        <div className="grid grid-cols-3 gap-2">
+          <Field label="Area">
+            <input value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} className={inputCls} />
+          </Field>
+          <Field label="City">
+            <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputCls} />
+          </Field>
+          <Field label="Pincode">
+            <input value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value })} className={inputCls} />
+          </Field>
+        </div>
+      </div>
+
+      {/* Business details */}
+      <div className="rounded-2xl border border-border bg-card p-4 card-elevated space-y-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Business Details</h4>
+        <div className="grid grid-cols-3 gap-2">
+          <Field label="Founded year">
+            <input type="number" value={form.foundedYear} onChange={(e) => setForm({ ...form, foundedYear: e.target.value })} className={inputCls} />
+          </Field>
+          <Field label="Team size">
+            <input value={form.teamSize} onChange={(e) => setForm({ ...form, teamSize: e.target.value })} className={inputCls} />
+          </Field>
+          <Field label="Response time">
+            <input value={form.responseTime} onChange={(e) => setForm({ ...form, responseTime: e.target.value })} className={inputCls} />
+          </Field>
+        </div>
+        <Field label="Certifications (comma-separated)">
+          <input value={form.certifications} onChange={(e) => setForm({ ...form, certifications: e.target.value })} className={inputCls} />
+        </Field>
+        <Field label="Facilities (comma-separated)">
+          <input value={form.facilities} onChange={(e) => setForm({ ...form, facilities: e.target.value })} className={inputCls} />
+        </Field>
+      </div>
+
+      <Button className="w-full" onClick={save} disabled={saving}>
+        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save all changes'}
+      </Button>
+    </div>
+  )
+}
+
+const inputCls = 'h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground'
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[10px] font-medium text-muted-foreground">{label}</span>
+      {children}
+    </label>
   )
 }
 
