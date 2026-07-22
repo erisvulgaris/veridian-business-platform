@@ -545,3 +545,41 @@ Stage Summary:
 - 21 verified B2B suppliers across 14 industrial categories.
 - Free ERP, super admin panel, auth system, AI features all intact.
 - GitHub updated with latest B2B-only code.
+
+---
+Task ID: 13 (OpenStreetMap + admin/ERP enhancements)
+Agent: Cron webDevReview
+Task: Replace map with OpenStreetMap, enhance admin panel and ERP dashboards, test thoroughly.
+
+Work Log:
+- Reviewed worklog (Tasks 1-12). Platform is B2B-only with 21 suppliers across 14 categories, enterprise ERP, super admin panel (7 tabs), auth, AI features.
+- QA via agent-browser: home, admin panel, ERP all functional.
+
+Changes:
+- **OpenStreetMap integration**: Replaced the stylized SVG map with real OpenStreetMap tiles using Leaflet + react-leaflet. Business pins show brand colors, ratings, verification dots. Hover tooltips, popups, near-me geolocation, zoom/recenter controls. CSS dynamically injected.
+- **Admin Settings tab**: New 8th tab with category CRUD (create with name/slug/color, delete with confirmation). Platform info card showing version, map provider, database.
+- **CSV Export**: Downloadable CSV for businesses, users, subscriptions via `/api/admin/export?type=` endpoint. Real data verified in export.
+- **ERP Order Status Management**: Inline dropdown in orders list to change status (new→confirmed→shipped→delivered→cancelled) and payment status (unpaid→partial→paid→refunded). `PATCH /api/erp/orders/[id]` API.
+- **ERP Invoice Status Management**: Inline dropdown to change invoice status (draft→sent→paid→overdue→cancelled). `PATCH /api/erp/invoices/[id]` API.
+
+New APIs:
+- `GET /api/admin/settings` — list categories
+- `POST /api/admin/settings` — create category (super admin only)
+- `PATCH /api/admin/settings` — update category (super admin only)
+- `DELETE /api/admin/settings?id=` — delete category (super admin only)
+- `GET /api/admin/export?type=businesses|users|subscriptions` — CSV export
+- `PATCH /api/erp/orders/[id]` — update order status/paymentStatus
+- `PATCH /api/erp/invoices/[id]` — update invoice status
+
+Verification:
+- ALL 20 API endpoints return 200: admin dashboard, businesses, users, reviews, claims, subscriptions, audit-log, settings, export (businesses/users/subs); ERP dashboard, inventory, orders, invoices, customers, expenses, staff; public home, businesses.
+- CRUD tested: created order → status updated to "confirmed" (200), created invoice → status updated to "paid" (200), created category (200), CSV export shows real business data.
+- Browser: OpenStreetMap loads with Leaflet container, business pins visible, admin panel shows 8 tabs, ERP shows order/invoice status dropdowns.
+- ESLint clean.
+- Code pushed to GitHub: https://github.com/erisvulgaris/veridian-business-platform
+
+Stage Summary:
+- Platform now uses real OpenStreetMap tiles instead of stylized SVG.
+- Admin panel has 8 tabs with full category management + CSV export.
+- ERP has inline order and invoice status management.
+- All functionality tested and verified.
