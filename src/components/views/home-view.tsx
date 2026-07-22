@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import useSWR from 'swr'
-import { Sparkles, TrendingUp, Star, BadgeCheck, Clock, Filter, X, MapPin, ArrowRight, Flame, Crown, ShieldCheck, History, Locate, Crosshair } from 'lucide-react'
+import { Sparkles, TrendingUp, Star, BadgeCheck, Clock, Filter, X, MapPin, ArrowRight, Flame, Crown, ShieldCheck, History, Locate, Crosshair, Package, Truck, MessageSquare } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import type { Business, Category } from '@/lib/types'
 import { MapView } from '@/components/map-view'
@@ -68,12 +68,36 @@ export function HomeView() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <Stat label="B2B Suppliers" value="20+" />
+            <Stat label="B2B Suppliers" value="26+" />
             <div className="h-8 w-px bg-border" />
-            <Stat label="Categories" value="12" />
+            <Stat label="Categories" value="14" />
             <div className="h-8 w-px bg-border" />
             <Stat label="Verified" value="100%" />
           </div>
+        </div>
+      </div>
+
+      {/* B2B trust strip */}
+      <div className="mb-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-xl border border-border/60 bg-card px-4 py-2.5">
+        <div className="flex items-center gap-1.5">
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+          <span className="text-[11px] font-medium text-muted-foreground">Verified B2B Suppliers</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <BadgeCheck className="h-3.5 w-3.5 text-primary" />
+          <span className="text-[11px] font-medium text-muted-foreground">Free ERP Included</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Package className="h-3.5 w-3.5 text-amber-500" />
+          <span className="text-[11px] font-medium text-muted-foreground">Live Inventory & Pricing</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <MessageSquare className="h-3.5 w-3.5 text-violet-500" />
+          <span className="text-[11px] font-medium text-muted-foreground">Direct RFQ & Messaging</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Truck className="h-3.5 w-3.5 text-cyan-500" />
+          <span className="text-[11px] font-medium text-muted-foreground">Pan-India Delivery</span>
         </div>
       </div>
 
