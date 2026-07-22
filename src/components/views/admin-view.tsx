@@ -6,7 +6,7 @@ import {
   Shield, Building2, Users, Star, MessageSquare, CheckCircle2, XCircle,
   TrendingUp, DollarSign, AlertCircle, Search, MoreVertical, Ban, Check,
   Trash2, Eye, Filter, Crown, BadgeCheck, Clock, Loader2, FileText,
-  Boxes, ArrowRight,
+  Boxes, ArrowRight, Settings, Download, Plus,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -25,7 +25,7 @@ const PIE_COLORS = ['#0f766e', '#0891b2', '#7c3aed', '#f59e0b', '#ef4444', '#10b
 
 export function AdminView() {
   const { user } = useAuth()
-  const [tab, setTab] = React.useState<'overview' | 'businesses' | 'users' | 'reviews' | 'claims' | 'subscriptions' | 'audit'>('overview')
+  const [tab, setTab] = React.useState<'overview' | 'businesses' | 'users' | 'reviews' | 'claims' | 'subscriptions' | 'audit' | 'settings'>('overview')
 
   const tabs = [
     { key: 'overview', label: 'Overview', icon: TrendingUp },
@@ -35,6 +35,7 @@ export function AdminView() {
     { key: 'claims', label: 'Claims', icon: CheckCircle2 },
     { key: 'subscriptions', label: 'Billing', icon: DollarSign },
     { key: 'audit', label: 'Audit Log', icon: FileText },
+    { key: 'settings', label: 'Settings', icon: Settings },
   ] as const
 
   return (
@@ -78,6 +79,7 @@ export function AdminView() {
       {tab === 'claims' && <ClaimManagement />}
       {tab === 'subscriptions' && <SubscriptionManagement />}
       {tab === 'audit' && <AuditLog />}
+      {tab === 'settings' && <AdminSettings />}
     </div>
   )
 }
@@ -686,6 +688,125 @@ function AuditLog() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// === Admin Settings (Category Management) ===
+function AdminSettings() {
+  const { data, isLoading, mutate } = useSWR('/api/admin/settings', fetcher)
+  const categories = data?.categories ?? []
+  const [showForm, setShowForm] = React.useState(false)
+  const [newCat, setNewCat] = React.useState({ name: '', slug: '', icon: 'Package', color: '#0f766e' })
+  const { user } = useAuth()
+  const isSuperAdmin = user?.role === 'super_admin'
+
+  const createCategory = async () => {
+    if (!newCat.name || !newCat.slug) { toast.error('Name and slug required'); return }
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCat),
+      })
+      const d = await res.json()
+      if (!res.ok) { toast.error(d.error); return }
+      toast.success('Category created')
+      setNewCat({ name: '', slug: '', icon: 'Package', color: '#0f766e' })
+      setShowForm(false)
+      mutate()
+    } catch { toast.error('Failed') }
+  }
+
+  const deleteCategory = async (id: string, name: string) => {
+    if (!confirm(`Delete category "${name}"?`)) return
+    await fetch(`/api/admin/settings?id=${id}`, { method: 'DELETE' })
+    mutate()
+    toast.success('Category deleted')
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">Platform Settings</h3>
+          <p className="text-[11px] text-muted-foreground">Manage categories and platform configuration</p>
+        </div>
+        <div className="flex gap-1.5">
+          <a href="/api/admin/export?type=businesses" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium hover:bg-accent">
+            <Download className="h-3.5 w-3.5" /> Businesses
+          </a>
+          <a href="/api/admin/export?type=users" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium hover:bg-accent">
+            <Download className="h-3.5 w-3.5" /> Users
+          </a>
+          <a href="/api/admin/export?type=subscriptions" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium hover:bg-accent">
+            <Download className="h-3.5 w-3.5" /> Subs
+          </a>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-4 card-elevated">
+        <div className="mb-3 flex items-center justify-between">
+          <h4 className="text-sm font-semibold">B2B Categories ({categories.length})</h4>
+          {isSuperAdmin && (
+            <Button size="sm" className="gap-1.5" onClick={() => setShowForm(s => !s)}>
+              <Plus className="h-3.5 w-3.5" /> Add category
+            </Button>
+          )}
+        </div>
+
+        {showForm && (
+          <div className="mb-3 flex flex-wrap items-end gap-2 rounded-xl border-2 border-primary/20 bg-primary/[0.03] p-3">
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground">Name</label>
+              <input value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value })} placeholder="e.g. Mining Equipment" className="h-9 w-40 rounded-lg border border-border px-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground">Slug</label>
+              <input value={newCat.slug} onChange={(e) => setNewCat({ ...newCat, slug: e.target.value })} placeholder="mining-equipment" className="h-9 w-40 rounded-lg border border-border px-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground">Color</label>
+              <input type="color" value={newCat.color} onChange={(e) => setNewCat({ ...newCat, color: e.target.value })} className="h-9 w-12 rounded-lg border border-border" />
+            </div>
+            <Button size="sm" onClick={createCategory}>Create</Button>
+            <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 rounded-lg" />)}</div>
+        ) : (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {categories.map((c: any) => (
+              <div key={c.id} className="flex items-center gap-2 rounded-lg border border-border p-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: c.color + '20', color: c.color }}>
+                  <Building2 className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold">{c.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{c.count} businesses</p>
+                </div>
+                {isSuperAdmin && (
+                  <button onClick={() => deleteCategory(c.id, c.name)} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500">
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-4 card-elevated">
+        <h4 className="mb-3 text-sm font-semibold">Platform Information</h4>
+        <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+          <div><p className="text-[10px] uppercase text-muted-foreground">Platform</p><p className="font-semibold">Veridian B2B</p></div>
+          <div><p className="text-[10px] uppercase text-muted-foreground">Version</p><p className="font-semibold">2.0.0</p></div>
+          <div><p className="text-[10px] uppercase text-muted-foreground">Map</p><p className="font-semibold">OpenStreetMap</p></div>
+          <div><p className="text-[10px] uppercase text-muted-foreground">Database</p><p className="font-semibold">SQLite (Prisma)</p></div>
+        </div>
+      </div>
     </div>
   )
 }

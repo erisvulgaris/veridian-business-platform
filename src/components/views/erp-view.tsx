@@ -292,12 +292,39 @@ function OrdersModule({ businessId }: { businessId: string }) {
   const { data, isLoading, mutate } = useSWR(`/api/erp/orders?businessId=${businessId}`, fetcher)
   const [showForm, setShowForm] = React.useState(false)
   const orders = data?.orders ?? []
+  const [updating, setUpdating] = React.useState<string | null>(null)
+
+  const updateStatus = async (id: string, status: string) => {
+    setUpdating(id)
+    try {
+      await fetch(`/api/erp/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      toast.success(`Order marked as ${status}`)
+      mutate()
+    } finally { setUpdating(null) }
+  }
+
+  const updatePayment = async (id: string, paymentStatus: string) => {
+    setUpdating(id + 'pay')
+    try {
+      await fetch(`/api/erp/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentStatus }),
+      })
+      toast.success(`Payment: ${paymentStatus}`)
+      mutate()
+    } finally { setUpdating(null) }
+  }
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold">Orders</h3>
+          <h3 className="text-sm font-semibold">B2B Orders</h3>
           <p className="text-[11px] text-muted-foreground">{orders.length} orders</p>
         </div>
         <Button size="sm" className="gap-1.5" onClick={() => setShowForm(s => !s)}><Plus className="h-3.5 w-3.5" /> New order</Button>
@@ -306,7 +333,7 @@ function OrdersModule({ businessId }: { businessId: string }) {
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
       ) : orders.length === 0 ? (
-        <EmptyState icon={<ShoppingCart className="h-8 w-8" />} title="No orders yet" subtitle="Create your first order to start tracking sales." />
+        <EmptyState icon={<ShoppingCart className="h-8 w-8" />} title="No orders yet" subtitle="Create your first B2B order to start tracking sales." />
       ) : (
         <div className="space-y-2">
           {orders.map((o: any) => (
@@ -320,9 +347,32 @@ function OrdersModule({ businessId }: { businessId: string }) {
               <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
                 <span>{new Date(o.createdAt).toLocaleDateString()}</span>
                 <span>·</span>
-                <span>{o.paymentStatus}</span>
-                <span>·</span>
                 <span>{JSON.parse(o.items).length} item(s)</span>
+              </div>
+              <div className="mt-2 flex items-center gap-1.5">
+                <select
+                  value={o.status}
+                  onChange={(e) => updateStatus(o.id, e.target.value)}
+                  disabled={updating === o.id}
+                  className="h-7 rounded-md border border-border bg-background px-1.5 text-[10px] outline-none"
+                >
+                  <option value="new">New</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <select
+                  value={o.paymentStatus}
+                  onChange={(e) => updatePayment(o.id, e.target.value)}
+                  disabled={updating === o.id + 'pay'}
+                  className="h-7 rounded-md border border-border bg-background px-1.5 text-[10px] outline-none"
+                >
+                  <option value="unpaid">Unpaid</option>
+                  <option value="partial">Partial</option>
+                  <option value="paid">Paid</option>
+                  <option value="refunded">Refunded</option>
+                </select>
               </div>
             </div>
           ))}
@@ -406,6 +456,20 @@ function InvoicesModule({ businessId }: { businessId: string }) {
   const { data, isLoading, mutate } = useSWR(`/api/erp/invoices?businessId=${businessId}`, fetcher)
   const [showForm, setShowForm] = React.useState(false)
   const invoices = data?.invoices ?? []
+  const [updating, setUpdating] = React.useState<string | null>(null)
+
+  const updateStatus = async (id: string, status: string) => {
+    setUpdating(id)
+    try {
+      await fetch(`/api/erp/invoices/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      toast.success(`Invoice marked as ${status}`)
+      mutate()
+    } finally { setUpdating(null) }
+  }
 
   return (
     <div className="space-y-3">
@@ -420,7 +484,7 @@ function InvoicesModule({ businessId }: { businessId: string }) {
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
       ) : invoices.length === 0 ? (
-        <EmptyState icon={<Receipt className="h-8 w-8" />} title="No invoices yet" subtitle="Create invoices for your customers." />
+        <EmptyState icon={<Receipt className="h-8 w-8" />} title="No invoices yet" subtitle="Create B2B invoices for your customers." />
       ) : (
         <div className="space-y-2">
           {invoices.map((inv: any) => (
@@ -433,6 +497,20 @@ function InvoicesModule({ businessId }: { businessId: string }) {
               </div>
               <div className="mt-1 text-[10px] text-muted-foreground">
                 {new Date(inv.createdAt).toLocaleDateString()} {inv.dueDate && `· Due: ${new Date(inv.dueDate).toLocaleDateString()}`}
+              </div>
+              <div className="mt-2">
+                <select
+                  value={inv.status}
+                  onChange={(e) => updateStatus(inv.id, e.target.value)}
+                  disabled={updating === inv.id}
+                  className="h-7 rounded-md border border-border bg-background px-1.5 text-[10px] outline-none"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="sent">Sent</option>
+                  <option value="paid">Paid</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
               </div>
             </div>
           ))}
