@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import useSWR from 'swr'
-import { Sparkles, TrendingUp, Star, BadgeCheck, Clock, Filter, X, MapPin, ArrowRight, Flame, Crown, ShieldCheck, History, Locate, Crosshair, Package, Truck, MessageSquare } from 'lucide-react'
+import { Sparkles, TrendingUp, Star, BadgeCheck, Clock, Filter, X, MapPin, ArrowRight, Flame, Crown, ShieldCheck, History, Locate, Crosshair, Package, Truck, MessageSquare, Factory, Cog, Wrench, Boxes, Monitor, Building, Sprout, Shirt, CircuitBoard, FlaskConical, Ship } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import type { Business, Category } from '@/lib/types'
 import { MapView } from '@/components/map-view'
@@ -114,6 +114,9 @@ export function HomeView() {
         <MapListSplit businesses={businesses} isLoading={isLoading} />
       </div>
 
+      {/* Browse by Category */}
+      <CategoryGrid categories={categories} />
+
       {/* Discovery sections */}
       <div className="mt-8 space-y-10">
         {recent.length > 0 && (
@@ -185,6 +188,50 @@ export function HomeView() {
         <ERPTeaser />
       </div>
     </div>
+  )
+}
+
+function CategoryGrid({ categories }: { categories: Category[] }) {
+  const { setView } = useAppStore()
+  const iconMap: Record<string, React.ReactNode> = {
+    'Factory': <Factory className="h-5 w-5" />,
+    'Cog': <Cog className="h-5 w-5" />,
+    'Package': <Package className="h-5 w-5" />,
+    'Wrench': <Wrench className="h-5 w-5" />,
+    'Boxes': <Boxes className="h-5 w-5" />,
+    'Truck': <Truck className="h-5 w-5" />,
+    'Monitor': <Monitor className="h-5 w-5" />,
+    'Building': <Building className="h-5 w-5" />,
+    'Sprout': <Sprout className="h-5 w-5" />,
+    'Shirt': <Shirt className="h-5 w-5" />,
+    'CircuitBoard': <CircuitBoard className="h-5 w-5" />,
+    'FlaskConical': <FlaskConical className="h-5 w-5" />,
+    'Ship': <Ship className="h-5 w-5" />,
+  }
+  return (
+    <section className="mt-8">
+      <div className="mb-3">
+        <h2 className="text-lg font-bold tracking-tight">Browse B2B Categories</h2>
+        <p className="text-xs text-muted-foreground">Find suppliers across {categories.length} industrial categories</p>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+        {categories.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => setView({ name: 'category', slug: c.slug, label: c.name })}
+            className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-3 text-center transition hover:border-primary/40 hover:shadow-sm"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl transition group-hover:scale-110" style={{ background: c.color + '20', color: c.color }}>
+              {iconMap[c.icon] || <Package className="h-5 w-5" />}
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold leading-tight">{c.name}</p>
+              <p className="text-[9px] text-muted-foreground">{c.count} suppliers</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
   )
 }
 
