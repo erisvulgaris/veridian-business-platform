@@ -70,6 +70,7 @@ export function BusinessCard({
           <img src={b.coverImage} alt={b.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/10" />
           <div className="absolute left-3 top-3 flex items-center gap-1.5">
+            <span className="inline-flex items-center rounded-full bg-primary/90 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur">B2B</span>
             <VerificationBadge level={b.verified} size="xs" />
             {b.trending && (
               <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-orange-500/90 to-rose-500/90 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur">
@@ -143,6 +144,7 @@ export function BusinessCard({
           </button>
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">B2B</span>
           <VerificationBadge level={b.verified} size="xs" />
           {b.trending && (
             <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-orange-500/15 to-rose-500/15 px-1.5 py-0.5 text-[9px] font-bold text-orange-600 dark:text-orange-400">
